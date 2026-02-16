@@ -1,0 +1,252 @@
+import { useState, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, Globe, FileSpreadsheet, X, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { ForecastPoint } from '@/data/demoData';
+
+export interface DataConnectorResult {
+  source: 'csv' | 'api';
+  label: string;
+  data: ForecastPoint[];
+}
+
+interface DataConnectorProps {
+  onDataLoaded: (result: DataConnectorResult) => void;
+  onDismiss: () => void;
+}
+
+function parseCSV(text: string): ForecastPoint[] {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+
+  const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+  const periodIdx = header.findIndex(h => ['period', 'date', 'month', 'time'].includes(h));
+  const actualIdx = header.findIndex(h => ['actual', 'value', 'sales', 'demand', 'amount'].includes(h));
+  const forecastIdx = header.findIndex(h => ['forecast', 'predicted', 'prediction'].includes(h));
+  const upperIdx = header.findIndex(h => ['upper', 'upper_bound', 'high'].includes(h));
+  const lowerIdx = header.findIndex(h => ['lower', 'lower_bound', 'low'].includes(h));
+
+  if (periodIdx === -1 || (actualIdx === -1 && forecastIdx === -1)) return [];
+
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const cols = line.split(',').map(c => c.trim());
+    const actual = actualIdx !== -1 ? parseFloat(cols[actualIdx]) : null;
+    const forecast = forecastIdx !== -1 ? parseFloat(cols[forecastIdx]) : (actual ?? 0);
+    const base = forecast || actual || 0;
+    return {
+      period: cols[periodIdx] || '',
+      actual: actual !== null && !isNaN(actual) ? actual : null,
+      forecast: !isNaN(forecast) ? forecast : 0,
+      upper: upperIdx !== -1 && !isNaN(parseFloat(cols[upperIdx])) ? parseFloat(cols[upperIdx]) : Math.round(base * 1.1),
+      lower: lowerIdx !== -1 && !isNaN(parseFloat(cols[lowerIdx])) ? parseFloat(cols[lowerIdx]) : Math.round(base * 0.9),
+    };
+  });
+}
+
+export default function DataConnector({ onDataLoaded, onDismiss }: DataConnectorProps) {
+  const [tab, setTab] = useState('csv');
+  const [dragOver, setDragOver] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvError, setCsvError] = useState('');
+  const [csvPreview, setCsvPreview] = useState<ForecastPoint[]>([]);
+
+  const [apiUrl, setApiUrl] = useState('');
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const processFile = useCallback((file: File) => {
+    setCsvError('');
+    setCsvPreview([]);
+    if (!file.name.endsWith('.csv')) {
+      setCsvError('Please upload a .csv file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setCsvError('File too large (max 5 MB)');
+      return;
+    }
+    setCsvFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const data = parseCSV(text);
+      if (data.length === 0) {
+        setCsvError('Could not parse CSV. Ensure headers include "period" and "actual" or "forecast".');
+        return;
+      }
+      setCsvPreview(data);
+    };
+    reader.readAsText(file);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  }, [processFile]);
+
+  const handleCsvConfirm = () => {
+    if (csvPreview.length > 0 && csvFile) {
+      onDataLoaded({ source: 'csv', label: csvFile.name, data: csvPreview });
+    }
+  };
+
+  const handleApiConnect = async () => {
+    if (!apiUrl.trim()) {
+      setApiError('Please enter an API URL');
+      return;
+    }
+    setApiLoading(true);
+    setApiError('');
+    try {
+      const res = await fetch(apiUrl.trim());
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const data: ForecastPoint[] = Array.isArray(json) ? json : json.data;
+      if (!Array.isArray(data) || data.length === 0) throw new Error('Response must be a JSON array of forecast points');
+      onDataLoaded({ source: 'api', label: new URL(apiUrl).hostname, data });
+    } catch (err: any) {
+      setApiError(err.message || 'Failed to connect');
+    } finally {
+      setApiLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="glass-card p-6"
+    >
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <FileSpreadsheet className="w-4 h-4 text-primary" />
+          <h2 className="text-lg font-semibold text-foreground">Connect Your Data</h2>
+        </div>
+        <button onClick={onDismiss} className="text-muted-foreground hover:text-foreground transition-colors">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="w-full bg-secondary/50 mb-4">
+          <TabsTrigger value="csv" className="flex-1 gap-1.5 text-xs">
+            <Upload className="w-3.5 h-3.5" /> Upload CSV
+          </TabsTrigger>
+          <TabsTrigger value="api" className="flex-1 gap-1.5 text-xs">
+            <Globe className="w-3.5 h-3.5" /> Live API
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="csv" className="space-y-4">
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => fileRef.current?.click()}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+            }`}
+          >
+            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-foreground font-medium">
+              {csvFile ? csvFile.name : 'Drop CSV here or click to browse'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Headers: period, actual, forecast, upper, lower
+            </p>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
+            />
+          </div>
+
+          {csvError && (
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              {csvError}
+            </div>
+          )}
+
+          {csvPreview.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-xs text-primary">
+                <Check className="w-3.5 h-3.5" />
+                <span>{csvPreview.length} data points parsed successfully</span>
+              </div>
+              <div className="max-h-32 overflow-auto rounded border border-border">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-secondary/50">
+                      <th className="px-2 py-1 text-left text-muted-foreground font-medium">Period</th>
+                      <th className="px-2 py-1 text-right text-muted-foreground font-medium">Actual</th>
+                      <th className="px-2 py-1 text-right text-muted-foreground font-medium">Forecast</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvPreview.slice(0, 5).map((p, i) => (
+                      <tr key={i} className="border-t border-border/50">
+                        <td className="px-2 py-1 text-foreground">{p.period}</td>
+                        <td className="px-2 py-1 text-right font-mono text-foreground">{p.actual ?? '—'}</td>
+                        <td className="px-2 py-1 text-right font-mono text-foreground">{p.forecast}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Button onClick={handleCsvConfirm} className="w-full">
+                <Check className="w-3.5 h-3.5 mr-2" /> Use This Data
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="api" className="space-y-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              API Endpoint
+            </label>
+            <Input
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              placeholder="https://api.example.com/forecast"
+              className="mt-2 bg-secondary border-border font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Must return JSON array with period, actual, forecast, upper, lower fields
+            </p>
+          </div>
+
+          {apiError && (
+            <div className="flex items-center gap-2 text-xs text-destructive">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              {apiError}
+            </div>
+          )}
+
+          <Button
+            onClick={handleApiConnect}
+            disabled={apiLoading}
+            variant="outline"
+            className="w-full border-primary/30 text-primary hover:bg-primary/10"
+          >
+            {apiLoading ? (
+              <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Connecting…</>
+            ) : (
+              <><Globe className="w-3.5 h-3.5 mr-2" /> Connect</>
+            )}
+          </Button>
+        </TabsContent>
+      </Tabs>
+    </motion.div>
+  );
+}

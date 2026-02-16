@@ -6,10 +6,11 @@ import { motion } from 'framer-motion';
 interface ForecastChartProps {
   industryId: string;
   horizon: number;
+  customData?: ForecastPoint[];
 }
 
-export default function ForecastChart({ industryId, horizon }: ForecastChartProps) {
-  const data = useMemo(() => generateForecastData(industryId, horizon), [industryId, horizon]);
+export default function ForecastChart({ industryId, horizon, customData }: ForecastChartProps) {
+  const data = useMemo(() => customData ?? generateForecastData(industryId, horizon), [industryId, horizon, customData]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
