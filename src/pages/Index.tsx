@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { BarChart3, Database } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart3, Database, PlugZap, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import TemplateSelector from '@/components/dashboard/TemplateSelector';
 import ForecastChart from '@/components/dashboard/ForecastChart';
 import KPICards from '@/components/dashboard/KPICards';
 import Recommendations from '@/components/dashboard/Recommendations';
 import SettingsPanel from '@/components/dashboard/SettingsPanel';
+import DataConnector, { type DataConnectorResult } from '@/components/dashboard/DataConnector';
 import { industries } from '@/data/demoData';
 
 const Index = () => {
@@ -13,12 +15,29 @@ const Index = () => {
   const [horizon, setHorizon] = useState(6);
   const [sensitivity, setSensitivity] = useState('balanced');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showConnector, setShowConnector] = useState(false);
+  const [customData, setCustomData] = useState<DataConnectorResult | null>(null);
 
   const currentIndustry = industries.find(i => i.id === selectedIndustry);
 
   const handleRefresh = useCallback(() => {
     setRefreshKey(k => k + 1);
   }, []);
+
+  const handleDataLoaded = useCallback((result: DataConnectorResult) => {
+    setCustomData(result);
+    setShowConnector(false);
+    setRefreshKey(k => k + 1);
+  }, []);
+
+  const handleClearCustomData = useCallback(() => {
+    setCustomData(null);
+    setRefreshKey(k => k + 1);
+  }, []);
+
+  const dataSourceLabel = customData
+    ? `${customData.source === 'csv' ? '📄' : '🌐'} ${customData.label}`
+    : 'Demo Mode';
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,10 +54,30 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Database className="w-3.5 h-3.5" />
-              <span>Demo Mode</span>
-            </div>
+            {customData ? (
+              <button
+                onClick={handleClearCustomData}
+                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                <span>{dataSourceLabel}</span>
+                <X className="w-3 h-3" />
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Database className="w-3.5 h-3.5" />
+                <span>Demo Mode</span>
+              </div>
+            )}
+            <div className="h-4 w-px bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowConnector(!showConnector)}
+              className="text-xs gap-1.5 text-muted-foreground hover:text-primary"
+            >
+              <PlugZap className="w-3.5 h-3.5" />
+              Connect Data
+            </Button>
             <div className="h-4 w-px bg-border" />
             <span className="text-xs text-primary font-medium">{currentIndustry?.name}</span>
           </div>
@@ -47,6 +86,16 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
+        {/* Data Connector Panel */}
+        <AnimatePresence>
+          {showConnector && (
+            <DataConnector
+              onDataLoaded={handleDataLoaded}
+              onDismiss={() => setShowConnector(false)}
+            />
+          )}
+        </AnimatePresence>
+
         {/* Template Selector */}
         <section>
           <motion.p
@@ -65,7 +114,12 @@ const Index = () => {
         {/* Chart + Settings */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <ForecastChart key={`chart-${selectedIndustry}-${horizon}-${refreshKey}`} industryId={selectedIndustry} horizon={horizon} />
+            <ForecastChart
+              key={`chart-${selectedIndustry}-${horizon}-${refreshKey}`}
+              industryId={selectedIndustry}
+              horizon={horizon}
+              customData={customData?.data}
+            />
           </div>
           <div>
             <SettingsPanel
