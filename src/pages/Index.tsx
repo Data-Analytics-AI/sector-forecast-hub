@@ -8,6 +8,7 @@ import KPICards from '@/components/dashboard/KPICards';
 import Recommendations from '@/components/dashboard/Recommendations';
 import SettingsPanel from '@/components/dashboard/SettingsPanel';
 import DataConnector, { type DataConnectorResult } from '@/components/dashboard/DataConnector';
+import SampleDataTable from '@/components/dashboard/SampleDataTable';
 import { industries } from '@/data/demoData';
 
 const Index = () => {
@@ -134,6 +135,9 @@ const Index = () => {
 
         {/* Recommendations */}
         <Recommendations key={`rec-${selectedIndustry}-${refreshKey}`} industryId={selectedIndustry} />
+
+        {/* Sample Data Table */}
+        <SampleDataTable key={`table-${selectedIndustry}-${horizon}-${refreshKey}`} industryId={selectedIndustry} horizon={horizon} />
       </main>
     </div>
   );
