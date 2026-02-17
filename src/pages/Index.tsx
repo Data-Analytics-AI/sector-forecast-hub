@@ -55,51 +55,90 @@ const Index = () => {
   if (!confirmedIndustry) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-16">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-5">
-              <BarChart3 className="w-7 h-7 text-primary" />
+        {/* Navbar */}
+        <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+          <div className="max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                <BarChart3 className="w-4.5 h-4.5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-base font-bold text-foreground tracking-tight">ForecastIQ</h1>
+                <p className="text-[11px] text-muted-foreground">Predictive Analytics & Optimization</p>
+              </div>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">ForecastIQ</h1>
-            <p className="mt-2 text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
-              Predictive Analytics & Optimization — Select your industry to get started
-            </p>
-          </motion.div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Database className="w-3.5 h-3.5" />
+                <span>Demo Data</span>
+              </div>
+              <div className="h-4 w-px bg-border" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowConnector(!showConnector)}
+                className="text-xs gap-1.5 text-muted-foreground hover:text-primary"
+              >
+                <PlugZap className="w-3.5 h-3.5" />
+                Connect Data
+              </Button>
+              <div className="h-4 w-px bg-border" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs gap-1.5 text-muted-foreground hover:text-primary"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                Use Copilot
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 max-w-[1440px] mx-auto w-full px-6 py-8 space-y-8">
+          <AnimatePresence>
+            {showConnector && (
+              <DataConnector
+                onDataLoaded={handleDataLoaded}
+                onDismiss={() => setShowConnector(false)}
+              />
+            )}
+          </AnimatePresence>
 
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="w-full max-w-4xl"
+            transition={{ duration: 0.5 }}
           >
-            <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-medium text-center">
+            <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-medium">
               Choose Industry Template
             </p>
             <TemplateSelector selected={selectedIndustry ?? ''} onSelect={setSelectedIndustry} />
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="mt-10"
-          >
-            <Button
-              size="lg"
-              disabled={!selectedIndustry}
-              onClick={handleLaunchDashboard}
-              className="gap-2 px-8 text-sm"
+          {selectedIndustry && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-6"
             >
-              Launch Dashboard
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </motion.div>
-        </div>
+              <SampleDataTable industryId={selectedIndustry} horizon={horizon} />
+
+              <div className="flex justify-center">
+                <Button
+                  size="lg"
+                  onClick={handleLaunchDashboard}
+                  className="gap-2 px-8 text-sm"
+                >
+                  Launch Dashboard
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </main>
       </div>
     );
   }
