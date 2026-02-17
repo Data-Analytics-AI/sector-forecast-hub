@@ -7,7 +7,7 @@ export interface Industry {
 }
 
 export const industries: Industry[] = [
-  { id: 'banking', name: 'Banking', icon: '🏦', description: 'Cash demand forecasting, ATM replenishment & staffing optimization', kpis: ['Cash Demand', 'ATM Uptime', 'Replenish Cost', 'Idle Cash %'] },
+  { id: 'banking', name: 'Banking', icon: '🏦', description: 'Cash & loan demand forecasting, ATM replenishment, risk scoring & portfolio optimization', kpis: ['Cash Demand', 'ATM Uptime', 'Default Risk', 'Loan Volume'] },
   { id: 'retail', name: 'Retail', icon: '🛍️', description: 'Demand forecasting, inventory & pricing optimization', kpis: ['Revenue', 'Basket Size', 'Inventory Turn', 'Margin'] },
   { id: 'manufacturing', name: 'Manufacturing', icon: '🏭', description: 'Production planning, quality & supply chain', kpis: ['Output', 'Defect Rate', 'OEE', 'Lead Time'] },
   { id: 'healthcare', name: 'Healthcare', icon: '🏥', description: 'Patient volume, resource allocation & cost control', kpis: ['Admissions', 'Bed Util.', 'Wait Time', 'Cost/Patient'] },
@@ -90,9 +90,11 @@ export function generateRecommendations(industryId: string): Recommendation[] {
   const recs: Record<string, Recommendation[]> = {
     banking: [
       { id: '1', priority: 'high', title: 'Optimize ATM cash replenishment schedule', description: 'Forecast cash demand across ATM networks to prevent shortages and reduce excess idle cash by aligning refill cycles with predicted withdrawal patterns.', impact: '-22% idle cash' },
-      { id: '2', priority: 'high', title: 'Align staffing with transaction volume', description: 'Deploy staff and resources based on predicted transaction peaks across branches, reducing wait times and overtime costs.', impact: '-18% staffing cost' },
-      { id: '3', priority: 'medium', title: 'Streamline cash transport logistics', description: 'Optimize cash-in-transit routes and schedules using regional demand forecasts to cut transport costs and improve turnaround.', impact: '-15% transport cost' },
-      { id: '4', priority: 'medium', title: 'Reduce regional cash surplus', description: 'Reallocate cash supply across regions by matching distribution to actual demand, minimizing holding costs and capital lockup.', impact: '+$1.4M freed capital' },
+      { id: '2', priority: 'high', title: 'Rebalance loan distribution portfolio', description: 'Forecast loan demand across segments and regions to optimize allocation, reduce concentration risk, and capture underserved growth markets.', impact: '+$4.1M lending revenue' },
+      { id: '3', priority: 'high', title: 'Enhance credit risk scoring model', description: 'Leverage predictive risk models to identify high-default-probability borrowers early, adjusting approval thresholds and pricing to minimize losses.', impact: '-2.8% default rate' },
+      { id: '4', priority: 'medium', title: 'Align staffing with transaction volume', description: 'Deploy staff and resources based on predicted transaction peaks across branches, reducing wait times and overtime costs.', impact: '-18% staffing cost' },
+      { id: '5', priority: 'medium', title: 'Streamline cash transport logistics', description: 'Optimize cash-in-transit routes and schedules using regional demand forecasts to cut transport costs and improve turnaround.', impact: '-15% transport cost' },
+      { id: '6', priority: 'low', title: 'Reduce regional cash surplus', description: 'Reallocate cash supply across regions by matching distribution to actual demand, minimizing holding costs and capital lockup.', impact: '+$1.4M freed capital' },
     ],
     retail: [
       { id: '1', priority: 'high', title: 'Pre-stock seasonal inventory', description: 'Demand forecast shows 22% spike in outdoor category starting week 14.', impact: '+$1.8M sales' },
