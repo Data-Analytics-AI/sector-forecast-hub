@@ -114,7 +114,7 @@ const Index = () => {
             <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-medium">
               Choose Industry Template
             </p>
-            <TemplateSelector selected={selectedIndustry ?? ''} onSelect={setSelectedIndustry} />
+            <TemplateSelector selected={selectedIndustry ?? ''} onSelect={(id) => setSelectedIndustry(id || null)} />
           </motion.div>
 
           {selectedIndustry && (
