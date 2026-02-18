@@ -38,6 +38,98 @@ export interface Recommendation {
   impact: string;
 }
 
+export interface IndustryContext {
+  valueLabel: string;
+  unit: string;
+  metricName: string;
+  tooltipContext: (period: string, value: number, type: 'actual' | 'forecast', lower?: number, upper?: number) => string;
+  copilotContext: (period: string, value: number, type: 'actual' | 'forecast', forecast?: number, lower?: number, upper?: number) => string;
+}
+
+export function getIndustryContext(industryId: string): IndustryContext {
+  const contexts: Record<string, IndustryContext> = {
+    banking: {
+      valueLabel: 'Cash Demand (₦)',
+      unit: '₦',
+      metricName: 'cash demand',
+      tooltipContext: (period, value, type, lower, upper) =>
+        type === 'actual'
+          ? `${period}: Actual ATM cash demand was ₦${value.toLocaleString()}. This is real withdrawal data from your branch network.`
+          : `${period}: Forecasted cash demand is ₦${value.toLocaleString()}, with a 95% confidence interval between ₦${lower?.toLocaleString()} and ₦${upper?.toLocaleString()}. Plan ATM replenishment accordingly.`,
+      copilotContext: (period, value, type, forecast, lower, upper) =>
+        type === 'actual'
+          ? `In ${period}, the actual ATM cash demand was ₦${value.toLocaleString()}. The model predicted ₦${forecast?.toLocaleString()} — ${Math.abs(value - (forecast || 0)) < value * 0.05 ? 'very accurate, meaning your cash replenishment strategy is well-calibrated.' : `a gap of ₦${Math.abs(value - (forecast || 0)).toLocaleString()}. This helps refine future ATM loading schedules.`}`
+          : `In ${period}, we predict cash demand of ₦${value.toLocaleString()}, with 95% confidence it falls between ₦${lower?.toLocaleString()} and ₦${upper?.toLocaleString()}. ${(upper || 0) - (lower || 0) > value * 0.2 ? 'The wider range suggests volatile withdrawal patterns — consider more frequent ATM checks.' : 'The tight range means you can confidently plan cash loading schedules.'}`,
+    },
+    retail: {
+      valueLabel: 'Sales Units',
+      unit: 'units',
+      metricName: 'sales volume',
+      tooltipContext: (period, value, type, lower, upper) =>
+        type === 'actual'
+          ? `${period}: Actual sales were ${value.toLocaleString()} units across all stores. This is real point-of-sale data.`
+          : `${period}: Forecasted sales are ${value.toLocaleString()} units, with 95% confidence between ${lower?.toLocaleString()} and ${upper?.toLocaleString()} units. Adjust inventory orders accordingly.`,
+      copilotContext: (period, value, type, forecast, lower, upper) =>
+        type === 'actual'
+          ? `In ${period}, actual store sales were ${value.toLocaleString()} units. The forecast was ${forecast?.toLocaleString()} units — ${Math.abs(value - (forecast || 0)) < value * 0.05 ? 'spot on! Your demand planning is working well.' : `off by ${Math.abs(value - (forecast || 0)).toLocaleString()} units. This feedback improves next quarter's stock orders.`}`
+          : `In ${period}, we expect sales of ${value.toLocaleString()} units (95% CI: ${lower?.toLocaleString()}–${upper?.toLocaleString()}). ${(upper || 0) - (lower || 0) > value * 0.2 ? 'Higher uncertainty — consider flexible supplier agreements.' : 'High confidence — safe to pre-stock inventory.'}`,
+    },
+    manufacturing: {
+      valueLabel: 'Production Output',
+      unit: 'units',
+      metricName: 'production output',
+      tooltipContext: (period, value, type, lower, upper) =>
+        type === 'actual'
+          ? `${period}: Actual production output was ${value.toLocaleString()} units from all manufacturing lines.`
+          : `${period}: Forecasted output is ${value.toLocaleString()} units, with 95% confidence between ${lower?.toLocaleString()} and ${upper?.toLocaleString()} units.`,
+      copilotContext: (period, value, type, forecast, lower, upper) =>
+        type === 'actual'
+          ? `In ${period}, actual production was ${value.toLocaleString()} units. The model predicted ${forecast?.toLocaleString()} — ${Math.abs(value - (forecast || 0)) < value * 0.05 ? 'excellent accuracy, production planning is on track.' : `a variance of ${Math.abs(value - (forecast || 0)).toLocaleString()} units. Check for equipment downtime or supply chain delays.`}`
+          : `In ${period}, expected output is ${value.toLocaleString()} units (95% CI: ${lower?.toLocaleString()}–${upper?.toLocaleString()}). ${(upper || 0) - (lower || 0) > value * 0.2 ? 'Wide range suggests potential disruptions — schedule preventive maintenance.' : 'Narrow range — production lines are running predictably.'}`,
+    },
+    healthcare: {
+      valueLabel: 'Patient Admissions',
+      unit: 'patients',
+      metricName: 'patient admissions',
+      tooltipContext: (period, value, type, lower, upper) =>
+        type === 'actual'
+          ? `${period}: ${value.toLocaleString()} patients were admitted across all facilities.`
+          : `${period}: Forecasted admissions are ${value.toLocaleString()} patients, 95% CI: ${lower?.toLocaleString()}–${upper?.toLocaleString()}. Plan bed capacity and staffing.`,
+      copilotContext: (period, value, type, forecast, lower, upper) =>
+        type === 'actual'
+          ? `In ${period}, ${value.toLocaleString()} patients were admitted. The forecast was ${forecast?.toLocaleString()} — ${Math.abs(value - (forecast || 0)) < value * 0.05 ? 'very accurate. Staffing levels matched demand well.' : `off by ${Math.abs(value - (forecast || 0)).toLocaleString()} patients. Review seasonal illness patterns for better planning.`}`
+          : `In ${period}, we expect ${value.toLocaleString()} admissions (95% CI: ${lower?.toLocaleString()}–${upper?.toLocaleString()}). ${(upper || 0) - (lower || 0) > value * 0.2 ? 'Higher uncertainty — have contingency beds and on-call staff ready.' : 'Stable forecast — standard staffing should suffice.'}`,
+    },
+    logistics: {
+      valueLabel: 'Shipment Volume',
+      unit: 'shipments',
+      metricName: 'shipment volume',
+      tooltipContext: (period, value, type, lower, upper) =>
+        type === 'actual'
+          ? `${period}: ${value.toLocaleString()} shipments were processed across the delivery network.`
+          : `${period}: Forecasted volume is ${value.toLocaleString()} shipments, 95% CI: ${lower?.toLocaleString()}–${upper?.toLocaleString()}. Plan fleet capacity accordingly.`,
+      copilotContext: (period, value, type, forecast, lower, upper) =>
+        type === 'actual'
+          ? `In ${period}, ${value.toLocaleString()} shipments were processed. Forecast was ${forecast?.toLocaleString()} — ${Math.abs(value - (forecast || 0)) < value * 0.05 ? 'well predicted. Fleet allocation was optimal.' : `a gap of ${Math.abs(value - (forecast || 0)).toLocaleString()} shipments. Adjust route planning and driver schedules.`}`
+          : `In ${period}, we forecast ${value.toLocaleString()} shipments (95% CI: ${lower?.toLocaleString()}–${upper?.toLocaleString()}). ${(upper || 0) - (lower || 0) > value * 0.2 ? 'Volatile demand expected — keep reserve fleet on standby.' : 'Predictable volume — optimize routes for cost savings.'}`,
+    },
+    energy: {
+      valueLabel: 'Load Demand (MW)',
+      unit: 'MW',
+      metricName: 'energy load',
+      tooltipContext: (period, value, type, lower, upper) =>
+        type === 'actual'
+          ? `${period}: Actual grid load was ${value.toLocaleString()} MW across all distribution zones.`
+          : `${period}: Forecasted load is ${value.toLocaleString()} MW, 95% CI: ${lower?.toLocaleString()}–${upper?.toLocaleString()} MW. Schedule generation capacity.`,
+      copilotContext: (period, value, type, forecast, lower, upper) =>
+        type === 'actual'
+          ? `In ${period}, actual grid load was ${value.toLocaleString()} MW. The model predicted ${forecast?.toLocaleString()} MW — ${Math.abs(value - (forecast || 0)) < value * 0.05 ? 'excellent accuracy. Generation dispatch was well-matched.' : `off by ${Math.abs(value - (forecast || 0)).toLocaleString()} MW. Review weather patterns and industrial consumption data.`}`
+          : `In ${period}, we forecast ${value.toLocaleString()} MW demand (95% CI: ${lower?.toLocaleString()}–${upper?.toLocaleString()}). ${(upper || 0) - (lower || 0) > value * 0.2 ? 'High variability — pre-position peak reserves and check renewable availability.' : 'Stable load expected — standard dispatch schedule should work.'}`,
+    },
+  };
+  return contexts[industryId] || contexts.retail;
+}
+
 export function generateForecastData(industryId: string, horizon: number): ForecastPoint[] {
   const baseValues: Record<string, number> = {
     banking: 1200, retail: 850, manufacturing: 2400,
@@ -73,10 +165,34 @@ export function generateKPIs(industryId: string): KPIData[] {
   const industry = industries.find(i => i.id === industryId);
   if (!industry) return [];
   
-  const values = [
-    { v: '2.4M', c: 12.3 }, { v: '3.2%', c: -0.8 },
-    { v: '87.5%', c: 4.2 }, { v: '$142', c: -6.1 },
-  ];
+  const industryValues: Record<string, { v: string; c: number }[]> = {
+    banking: [
+      { v: '₦2.4B', c: 12.3 }, { v: '98.7%', c: 1.2 },
+      { v: '3.2%', c: -0.8 }, { v: '₦1.8B', c: 8.5 },
+    ],
+    retail: [
+      { v: '$4.2M', c: 9.1 }, { v: '$68.50', c: 3.4 },
+      { v: '8.2x', c: 4.2 }, { v: '34.5%', c: -1.3 },
+    ],
+    manufacturing: [
+      { v: '12,400', c: 5.6 }, { v: '1.8%', c: -2.1 },
+      { v: '87.5%', c: 4.2 }, { v: '4.2 days', c: -6.1 },
+    ],
+    healthcare: [
+      { v: '1,240', c: 8.3 }, { v: '92.1%', c: 3.7 },
+      { v: '18 min', c: -12.4 }, { v: '$3,420', c: -4.2 },
+    ],
+    logistics: [
+      { v: '96.8%', c: 2.1 }, { v: '88.4%', c: 5.3 },
+      { v: '$1.42', c: -3.8 }, { v: '48.2K', c: 11.2 },
+    ],
+    energy: [
+      { v: '4,520', c: 7.8 }, { v: '91.3%', c: 2.4 },
+      { v: '$0.087', c: -5.1 }, { v: '99.2%', c: 0.8 },
+    ],
+  };
+
+  const values = industryValues[industryId] || industryValues.retail;
   
   return industry.kpis.map((label, i) => ({
     label,
