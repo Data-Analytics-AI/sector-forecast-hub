@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, ArrowUpDown, MessageCircle } from 'lucide-react';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { generateForecastData } from '@/data/demoData';
+import { generateForecastData, getIndustryContext } from '@/data/demoData';
 import { Button } from '@/components/ui/button';
 
 interface SampleDataTableProps {
@@ -11,23 +11,14 @@ interface SampleDataTableProps {
   horizon: number;
 }
 
-const VISIBLE_ROWS = 5;
-
-function getTooltip(row: { period: string; actual: number | null; forecast: number; upper: number; lower: number }): string {
-  if (row.actual !== null) {
-    return `${row.period}: Actual recorded value was ${row.actual.toLocaleString()} units. This is real historical data used to train the forecast model.`;
-  }
-  return `${row.period}: Forecast is ${row.forecast.toLocaleString()} units, with a 95% confidence interval between ${row.lower.toLocaleString()} and ${row.upper.toLocaleString()}. This means we're 95% sure the real value will fall in that range.`;
-}
-
 const SampleDataTable = ({ industryId, horizon }: SampleDataTableProps) => {
   const [expanded, setExpanded] = useState(false);
   const [sortAsc, setSortAsc] = useState(true);
   const [showCopilot, setShowCopilot] = useState<number | null>(null);
 
+  const ctx = useMemo(() => getIndustryContext(industryId), [industryId]);
   const allData = useMemo(() => generateForecastData(industryId, horizon), [industryId, horizon]);
 
-  // Take a balanced sample: 3 historical + 2 forecast for compact view, or slice more for expanded
   const sampleData = useMemo(() => {
     const historical = allData.filter(d => d.actual !== null);
     const forecasted = allData.filter(d => d.actual === null);
@@ -49,9 +40,9 @@ const SampleDataTable = ({ industryId, horizon }: SampleDataTableProps) => {
         className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden"
       >
         <div className="px-5 py-4 border-b border-border/50">
-          <h3 className="text-sm font-semibold text-foreground">📊 Data Format & Forecast Preview</h3>
+          <h3 className="text-sm font-semibold text-foreground">📊 {ctx.valueLabel} — Data Format & Forecast</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            This shows how your data should look. <span className="text-primary font-medium">Blue rows</span> = your historical data · <span className="text-accent-foreground font-medium">Default rows</span> = AI forecast. Hover any row for a plain-English explanation.
+            This shows how your {ctx.metricName} data should look. <span className="text-primary font-medium">Blue rows</span> = your historical records · <span className="text-accent-foreground font-medium">Default rows</span> = AI forecast. Hover any row for a plain-English explanation.
           </p>
         </div>
 
@@ -66,8 +57,8 @@ const SampleDataTable = ({ industryId, horizon }: SampleDataTableProps) => {
                   </button>
                 </TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium text-right">Type</TableHead>
-                <TableHead className="text-xs text-muted-foreground font-medium text-right">Value</TableHead>
-                <TableHead className="text-xs text-muted-foreground font-medium text-right">Forecast</TableHead>
+                <TableHead className="text-xs text-muted-foreground font-medium text-right">{ctx.valueLabel}</TableHead>
+                <TableHead className="text-xs text-muted-foreground font-medium text-right">Forecast ({ctx.unit})</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium text-right">Range (95% CI)</TableHead>
                 <TableHead className="text-xs text-muted-foreground font-medium text-center w-10">💡</TableHead>
               </TableRow>
@@ -96,8 +87,14 @@ const SampleDataTable = ({ industryId, horizon }: SampleDataTableProps) => {
                               {row.period}
                             </span>
                           </TooltipTrigger>
-                          <TooltipContent side="right" className="max-w-[260px] text-xs">
-                            {getTooltip(row)}
+                          <TooltipContent side="right" className="max-w-[280px] text-xs">
+                            {ctx.tooltipContext(
+                              row.period,
+                              isHistorical ? row.actual! : row.forecast,
+                              isHistorical ? 'actual' : 'forecast',
+                              row.lower,
+                              row.upper
+                            )}
                           </TooltipContent>
                         </Tooltip>
                       </TableCell>
@@ -159,18 +156,15 @@ const SampleDataTable = ({ industryId, horizon }: SampleDataTableProps) => {
                   <span className="font-semibold text-primary">Copilot: </span>
                   {(() => {
                     const row = sampleData[showCopilot];
-                    if (row.actual !== null) {
-                      return `In ${row.period}, the actual recorded value was ${row.actual.toLocaleString()} units. The model's forecast for that period was ${row.forecast.toLocaleString()} units — ${
-                        Math.abs(row.actual - row.forecast) < row.actual * 0.05
-                          ? 'very close to the real value, showing good model accuracy.'
-                          : `a difference of ${Math.abs(row.actual - row.forecast).toLocaleString()} units. This helps the model learn and improve future predictions.`
-                      }`;
-                    }
-                    return `In ${row.period}, the forecast is stable at ${row.forecast.toLocaleString()} units, with a 95% confidence interval between ${row.lower.toLocaleString()} and ${row.upper.toLocaleString()}. This means we're 95% confident the actual value will fall within this range. ${
-                      row.upper - row.lower > row.forecast * 0.2
-                        ? 'The wider range suggests more uncertainty — consider additional data sources to narrow it.'
-                        : 'The narrow range indicates a high-confidence prediction.'
-                    }`;
+                    const isHistorical = row.actual !== null;
+                    return ctx.copilotContext(
+                      row.period,
+                      isHistorical ? row.actual! : row.forecast,
+                      isHistorical ? 'actual' : 'forecast',
+                      row.forecast,
+                      row.lower,
+                      row.upper
+                    );
                   })()}
                 </div>
               </div>

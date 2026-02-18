@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, Database, PlugZap, X, ArrowRight } from 'lucide-react';
+import { BarChart3, Database, PlugZap, X, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TemplateSelector from '@/components/dashboard/TemplateSelector';
 import ForecastChart from '@/components/dashboard/ForecastChart';
@@ -149,16 +149,24 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={handleBackToSelector} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleBackToSelector}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+            <div className="h-5 w-px bg-border" />
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                <BarChart3 className="w-4.5 h-4.5 text-primary" />
+                <span className="text-lg">{currentIndustry?.icon}</span>
               </div>
               <div>
-                <h1 className="text-base font-bold text-foreground tracking-tight">ForecastIQ</h1>
-                <p className="text-[11px] text-muted-foreground">Predictive Analytics & Optimization</p>
+                <h1 className="text-base font-bold text-foreground tracking-tight">{currentIndustry?.name} Dashboard</h1>
+                <p className="text-[11px] text-muted-foreground">{currentIndustry?.description}</p>
               </div>
-            </button>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {customData ? (
@@ -185,8 +193,6 @@ const Index = () => {
               <PlugZap className="w-3.5 h-3.5" />
               Connect Data
             </Button>
-            <div className="h-4 w-px bg-border" />
-            <span className="text-xs text-primary font-medium">{currentIndustry?.name}</span>
           </div>
         </div>
       </header>
