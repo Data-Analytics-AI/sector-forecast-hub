@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ForecastPoint } from '@/data/demoData';
+import { AlertTriangle } from 'lucide-react';
 
 export interface DataConnectorResult {
   source: 'csv' | 'api';
@@ -15,7 +16,17 @@ export interface DataConnectorResult {
 interface DataConnectorProps {
   onDataLoaded: (result: DataConnectorResult) => void;
   onDismiss: () => void;
+  selectedIndustry?: string | null;
 }
+
+const industryValueColumns: Record<string, string> = {
+  banking: 'Cash Demand',
+  retail: 'Sales Units',
+  manufacturing: 'Production Output',
+  healthcare: 'Patient Admissions',
+  logistics: 'Shipment Volume',
+  energy: 'Load Demand',
+};
 
 function parseCSV(text: string): ForecastPoint[] {
   const lines = text.trim().split('\n');
@@ -45,7 +56,8 @@ function parseCSV(text: string): ForecastPoint[] {
   });
 }
 
-export default function DataConnector({ onDataLoaded, onDismiss }: DataConnectorProps) {
+export default function DataConnector({ onDataLoaded, onDismiss, selectedIndustry }: DataConnectorProps) {
+  const valueColumn = selectedIndustry ? industryValueColumns[selectedIndustry] || 'Value' : null;
   const [tab, setTab] = useState('csv');
   const [dragOver, setDragOver] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -117,6 +129,36 @@ export default function DataConnector({ onDataLoaded, onDismiss }: DataConnector
     }
   };
 
+  if (!valueColumn) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="glass-card p-6"
+      >
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">Connect Your Data</h2>
+          </div>
+          <button onClick={onDismiss} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/50 border border-accent">
+          <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Select a sector first</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Please choose an industry sector below so we know the correct data format for your upload.
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -132,6 +174,12 @@ export default function DataConnector({ onDataLoaded, onDismiss }: DataConnector
         <button onClick={onDismiss} className="text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-4 h-4" />
         </button>
+      </div>
+
+      <div className="mb-4 p-3 rounded-md bg-secondary/60 border border-border">
+        <p className="text-xs text-muted-foreground">
+          Required columns: <span className="font-semibold text-foreground">Period</span> and <span className="font-semibold text-foreground">{valueColumn}</span>
+        </p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -159,7 +207,7 @@ export default function DataConnector({ onDataLoaded, onDismiss }: DataConnector
               {csvFile ? csvFile.name : 'Drop CSV here or click to browse'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Headers: period, actual, forecast, upper, lower
+              Headers: <span className="font-medium">Period</span>, <span className="font-medium">{valueColumn}</span>
             </p>
             <input
               ref={fileRef}
@@ -188,7 +236,7 @@ export default function DataConnector({ onDataLoaded, onDismiss }: DataConnector
                   <thead>
                     <tr className="bg-secondary/50">
                       <th className="px-2 py-1 text-left text-muted-foreground font-medium">Period</th>
-                      <th className="px-2 py-1 text-right text-muted-foreground font-medium">Actual</th>
+                      <th className="px-2 py-1 text-right text-muted-foreground font-medium">{valueColumn}</th>
                       <th className="px-2 py-1 text-right text-muted-foreground font-medium">Forecast</th>
                     </tr>
                   </thead>
@@ -222,7 +270,7 @@ export default function DataConnector({ onDataLoaded, onDismiss }: DataConnector
               className="mt-2 bg-secondary border-border font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground mt-1.5">
-              Must return JSON array with period, actual, forecast, upper, lower fields
+              Must return JSON array with <span className="font-medium">Period</span> and <span className="font-medium">{valueColumn}</span> fields
             </p>
           </div>
 

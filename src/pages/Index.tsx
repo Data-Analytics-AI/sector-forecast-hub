@@ -102,6 +102,7 @@ const Index = () => {
               <DataConnector
                 onDataLoaded={handleDataLoaded}
                 onDismiss={() => setShowConnector(false)}
+                selectedIndustry={selectedIndustry}
               />
             )}
           </AnimatePresence>
@@ -201,10 +202,11 @@ const Index = () => {
       <main className="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
         <AnimatePresence>
           {showConnector && (
-            <DataConnector
-              onDataLoaded={handleDataLoaded}
-              onDismiss={() => setShowConnector(false)}
-            />
+              <DataConnector
+                onDataLoaded={handleDataLoaded}
+                onDismiss={() => setShowConnector(false)}
+                selectedIndustry={confirmedIndustry}
+              />
           )}
         </AnimatePresence>
 
