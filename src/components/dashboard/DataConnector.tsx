@@ -28,30 +28,31 @@ const industryValueColumns: Record<string, string> = {
   energy: 'Load Demand',
 };
 
-function parseCSV(text: string): ForecastPoint[] {
+function parseCSV(text: string, valueColumn: string): ForecastPoint[] {
   const lines = text.trim().split('\n');
   if (lines.length < 2) return [];
 
   const header = lines[0].toLowerCase().split(',').map(h => h.trim());
   const periodIdx = header.findIndex(h => ['period', 'date', 'month', 'time'].includes(h));
-  const actualIdx = header.findIndex(h => ['actual', 'value', 'sales', 'demand', 'amount'].includes(h));
-  const forecastIdx = header.findIndex(h => ['forecast', 'predicted', 'prediction'].includes(h));
-  const upperIdx = header.findIndex(h => ['upper', 'upper_bound', 'high'].includes(h));
-  const lowerIdx = header.findIndex(h => ['lower', 'lower_bound', 'low'].includes(h));
+  // Match the industry-specific value column (e.g. "cash demand", "sales units")
+  const valueColLower = valueColumn.toLowerCase();
+  const valueIdx = header.findIndex(h => h === valueColLower);
+  // Fallback: also accept generic "value" header
+  const fallbackIdx = valueIdx === -1 ? header.findIndex(h => h === 'value') : -1;
+  const dataIdx = valueIdx !== -1 ? valueIdx : fallbackIdx;
 
-  if (periodIdx === -1 || (actualIdx === -1 && forecastIdx === -1)) return [];
+  if (periodIdx === -1 || dataIdx === -1) return [];
 
   return lines.slice(1).filter(l => l.trim()).map(line => {
     const cols = line.split(',').map(c => c.trim());
-    const actual = actualIdx !== -1 ? parseFloat(cols[actualIdx]) : null;
-    const forecast = forecastIdx !== -1 ? parseFloat(cols[forecastIdx]) : (actual ?? 0);
-    const base = forecast || actual || 0;
+    const value = parseFloat(cols[dataIdx]);
+    const base = !isNaN(value) ? value : 0;
     return {
       period: cols[periodIdx] || '',
-      actual: actual !== null && !isNaN(actual) ? actual : null,
-      forecast: !isNaN(forecast) ? forecast : 0,
-      upper: upperIdx !== -1 && !isNaN(parseFloat(cols[upperIdx])) ? parseFloat(cols[upperIdx]) : Math.round(base * 1.1),
-      lower: lowerIdx !== -1 && !isNaN(parseFloat(cols[lowerIdx])) ? parseFloat(cols[lowerIdx]) : Math.round(base * 0.9),
+      actual: !isNaN(value) ? value : null,
+      forecast: base,
+      upper: Math.round(base * 1.1),
+      lower: Math.round(base * 0.9),
     };
   });
 }
@@ -85,9 +86,9 @@ export default function DataConnector({ onDataLoaded, onDismiss, selectedIndustr
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const data = parseCSV(text);
+      const data = parseCSV(text, valueColumn!);
       if (data.length === 0) {
-        setCsvError('Could not parse CSV. Ensure headers include "period" and "actual" or "forecast".');
+        setCsvError(`Could not parse CSV. Ensure headers are "Period" and "${valueColumn}".`);
         return;
       }
       setCsvPreview(data);
@@ -237,7 +238,6 @@ export default function DataConnector({ onDataLoaded, onDismiss, selectedIndustr
                     <tr className="bg-secondary/50">
                       <th className="px-2 py-1 text-left text-muted-foreground font-medium">Period</th>
                       <th className="px-2 py-1 text-right text-muted-foreground font-medium">{valueColumn}</th>
-                      <th className="px-2 py-1 text-right text-muted-foreground font-medium">Forecast</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -245,7 +245,6 @@ export default function DataConnector({ onDataLoaded, onDismiss, selectedIndustr
                       <tr key={i} className="border-t border-border/50">
                         <td className="px-2 py-1 text-foreground">{p.period}</td>
                         <td className="px-2 py-1 text-right font-mono text-foreground">{p.actual ?? '—'}</td>
-                        <td className="px-2 py-1 text-right font-mono text-foreground">{p.forecast}</td>
                       </tr>
                     ))}
                   </tbody>
