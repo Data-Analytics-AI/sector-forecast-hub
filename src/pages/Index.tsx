@@ -9,7 +9,8 @@ import Recommendations from '@/components/dashboard/Recommendations';
 import SettingsPanel from '@/components/dashboard/SettingsPanel';
 import DataConnector, { type DataConnectorResult } from '@/components/dashboard/DataConnector';
 import SampleDataTable from '@/components/dashboard/SampleDataTable';
-import { industries } from '@/data/demoData';
+import { industries, extendCustomDataWithForecast, type ForecastPoint } from '@/data/demoData';
+import { useMemo } from 'react';
 
 const Index = () => {
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
@@ -21,6 +22,12 @@ const Index = () => {
   const [customData, setCustomData] = useState<DataConnectorResult | null>(null);
 
   const currentIndustry = industries.find(i => i.id === confirmedIndustry);
+
+  // Extend custom data with forecast predictions
+  const extendedData = useMemo(() => {
+    if (!customData?.data) return undefined;
+    return extendCustomDataWithForecast(customData.data, horizon);
+  }, [customData, horizon]);
 
   const handleRefresh = useCallback(() => {
     setRefreshKey(k => k + 1);
@@ -210,7 +217,7 @@ const Index = () => {
           )}
         </AnimatePresence>
 
-        <KPICards key={`kpi-${confirmedIndustry}-${refreshKey}`} industryId={confirmedIndustry} />
+        <KPICards key={`kpi-${confirmedIndustry}-${refreshKey}`} industryId={confirmedIndustry} customData={extendedData} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
@@ -218,7 +225,7 @@ const Index = () => {
               key={`chart-${confirmedIndustry}-${horizon}-${refreshKey}`}
               industryId={confirmedIndustry}
               horizon={horizon}
-              customData={customData?.data}
+              customData={extendedData}
             />
           </div>
           <div>
@@ -232,9 +239,9 @@ const Index = () => {
           </div>
         </div>
 
-        <Recommendations key={`rec-${confirmedIndustry}-${refreshKey}`} industryId={confirmedIndustry} />
+        <Recommendations key={`rec-${confirmedIndustry}-${refreshKey}`} industryId={confirmedIndustry} customData={extendedData} />
 
-        <SampleDataTable key={`table-${confirmedIndustry}-${horizon}-${refreshKey}`} industryId={confirmedIndustry} horizon={horizon} />
+        <SampleDataTable key={`table-${confirmedIndustry}-${horizon}-${refreshKey}`} industryId={confirmedIndustry} horizon={horizon} customData={extendedData} />
       </main>
     </div>
   );

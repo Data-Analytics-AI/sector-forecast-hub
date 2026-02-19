@@ -202,6 +202,166 @@ export function generateKPIs(industryId: string): KPIData[] {
   }));
 }
 
+export function extendCustomDataWithForecast(data: ForecastPoint[], horizon: number): ForecastPoint[] {
+  if (data.length < 2) return data;
+
+  // All uploaded points are treated as actuals
+  const actuals = data.map(d => ({ ...d, actual: d.actual ?? d.forecast }));
+
+  // Calculate simple linear trend from actuals
+  const values = actuals.map(d => d.actual!);
+  const n = values.length;
+  const avgX = (n - 1) / 2;
+  const avgY = values.reduce((a, b) => a + b, 0) / n;
+  let num = 0, den = 0;
+  for (let i = 0; i < n; i++) {
+    num += (i - avgX) * (values[i] - avgY);
+    den += (i - avgX) * (i - avgX);
+  }
+  const slope = den !== 0 ? num / den : 0;
+  const intercept = avgY - slope * avgX;
+
+  // Detect simple seasonality (if enough data)
+  const seasonLen = Math.min(12, Math.floor(n / 2));
+  const seasonal: number[] = new Array(seasonLen).fill(0);
+  if (n >= seasonLen * 2) {
+    for (let i = 0; i < n; i++) {
+      const detrended = values[i] - (intercept + slope * i);
+      seasonal[i % seasonLen] += detrended;
+    }
+    const counts = new Array(seasonLen).fill(0);
+    for (let i = 0; i < n; i++) counts[i % seasonLen]++;
+    for (let i = 0; i < seasonLen; i++) seasonal[i] /= counts[i] || 1;
+  }
+
+  // Parse last period to generate future period labels
+  const lastPeriod = actuals[actuals.length - 1].period;
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  let lastMonthIdx = monthNames.findIndex(m => lastPeriod.startsWith(m));
+  let lastYear = parseInt(lastPeriod.match(/'(\d+)/)?.[1] || '26');
+  if (lastMonthIdx === -1) lastMonthIdx = 0;
+
+  // Generate forecast points
+  const forecastPoints: ForecastPoint[] = [];
+  for (let i = 1; i <= horizon; i++) {
+    const futureIdx = n + i - 1;
+    const trendValue = intercept + slope * futureIdx;
+    const seasonValue = seasonal[futureIdx % seasonLen] || 0;
+    const predicted = Math.round(trendValue + seasonValue);
+    const uncertainty = Math.abs(predicted) * 0.05 * Math.sqrt(i);
+
+    const mIdx = (lastMonthIdx + i) % 12;
+    const yOffset = Math.floor((lastMonthIdx + i) / 12);
+    const yearStr = (lastYear + yOffset).toString().slice(-2);
+
+    forecastPoints.push({
+      period: `${monthNames[mIdx]} '${yearStr}`,
+      actual: null,
+      forecast: Math.max(0, predicted),
+      upper: Math.max(0, Math.round(predicted + uncertainty)),
+      lower: Math.max(0, Math.round(predicted - uncertainty)),
+    });
+  }
+
+  return [...actuals, ...forecastPoints];
+}
+
+export function generateCustomKPIs(industryId: string, data: ForecastPoint[]): KPIData[] {
+  const industry = industries.find(i => i.id === industryId);
+  if (!industry || data.length === 0) return generateKPIs(industryId);
+
+  const actuals = data.filter(d => d.actual !== null).map(d => d.actual!);
+  const forecasts = data.filter(d => d.actual === null).map(d => d.forecast);
+  
+  if (actuals.length < 2) return generateKPIs(industryId);
+
+  const latest = actuals[actuals.length - 1];
+  const previous = actuals[actuals.length - 2];
+  const change = previous !== 0 ? ((latest - previous) / previous) * 100 : 0;
+  const avg = actuals.reduce((a, b) => a + b, 0) / actuals.length;
+  const nextForecast = forecasts.length > 0 ? forecasts[0] : latest;
+  const forecastChange = latest !== 0 ? ((nextForecast - latest) / latest) * 100 : 0;
+
+  const ctx = getIndustryContext(industryId);
+  const formatVal = (v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v.toFixed(0);
+
+  return [
+    { label: `Latest ${ctx.metricName}`, value: formatVal(latest), change: parseFloat(change.toFixed(1)), trend: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral' },
+    { label: `Average ${ctx.metricName}`, value: formatVal(avg), change: 0, trend: 'neutral' },
+    { label: 'Next Period Forecast', value: formatVal(nextForecast), change: parseFloat(forecastChange.toFixed(1)), trend: forecastChange > 0 ? 'up' : forecastChange < 0 ? 'down' : 'neutral' },
+    { label: 'Data Points', value: `${actuals.length}`, change: forecasts.length, trend: 'up' },
+  ];
+}
+
+export function generateCustomRecommendations(industryId: string, data: ForecastPoint[]): Recommendation[] {
+  const actuals = data.filter(d => d.actual !== null).map(d => d.actual!);
+  const forecasts = data.filter(d => d.actual === null);
+  const ctx = getIndustryContext(industryId);
+
+  if (actuals.length < 2 || forecasts.length === 0) return generateRecommendations(industryId);
+
+  const latest = actuals[actuals.length - 1];
+  const avg = actuals.reduce((a, b) => a + b, 0) / actuals.length;
+  const nextForecast = forecasts[0].forecast;
+  const maxForecast = Math.max(...forecasts.map(f => f.forecast));
+  const minForecast = Math.min(...forecasts.map(f => f.forecast));
+  const trend = nextForecast > latest ? 'increasing' : 'decreasing';
+  const volatility = (maxForecast - minForecast) / avg;
+
+  const recs: Recommendation[] = [];
+
+  if (trend === 'increasing') {
+    recs.push({
+      id: '1', priority: 'high',
+      title: `Prepare for rising ${ctx.metricName}`,
+      description: `Forecast shows ${ctx.metricName} increasing from ${latest.toLocaleString()} to ${nextForecast.toLocaleString()} next period. Scale capacity and resources proactively.`,
+      impact: `+${((nextForecast - latest) / latest * 100).toFixed(1)}% projected growth`,
+    });
+  } else {
+    recs.push({
+      id: '1', priority: 'high',
+      title: `Manage declining ${ctx.metricName}`,
+      description: `Forecast shows ${ctx.metricName} decreasing from ${latest.toLocaleString()} to ${nextForecast.toLocaleString()}. Optimize costs and investigate root causes.`,
+      impact: `${((nextForecast - latest) / latest * 100).toFixed(1)}% projected change`,
+    });
+  }
+
+  if (volatility > 0.3) {
+    recs.push({
+      id: '2', priority: 'high',
+      title: `High volatility detected in ${ctx.metricName}`,
+      description: `Forecast range spans from ${minForecast.toLocaleString()} to ${maxForecast.toLocaleString()} ${ctx.unit}. Build buffer capacity and flexible scheduling.`,
+      impact: `${(volatility * 100).toFixed(0)}% variation range`,
+    });
+  } else {
+    recs.push({
+      id: '2', priority: 'low',
+      title: `Stable ${ctx.metricName} outlook`,
+      description: `Low volatility in forecast (${minForecast.toLocaleString()}–${maxForecast.toLocaleString()} ${ctx.unit}). Current plans can proceed with high confidence.`,
+      impact: 'Low risk',
+    });
+  }
+
+  const peakPeriod = forecasts.reduce((max, f) => f.forecast > max.forecast ? f : max, forecasts[0]);
+  recs.push({
+    id: '3', priority: 'medium',
+    title: `Peak ${ctx.metricName} expected in ${peakPeriod.period}`,
+    description: `The highest forecasted value is ${peakPeriod.forecast.toLocaleString()} ${ctx.unit} in ${peakPeriod.period}. Ensure resources are allocated for this peak.`,
+    impact: `${peakPeriod.forecast.toLocaleString()} ${ctx.unit} peak`,
+  });
+
+  if (latest > avg * 1.1) {
+    recs.push({
+      id: '4', priority: 'medium',
+      title: `Current ${ctx.metricName} above historical average`,
+      description: `Latest value (${latest.toLocaleString()}) is ${((latest / avg - 1) * 100).toFixed(0)}% above the historical average of ${Math.round(avg).toLocaleString()}. Monitor whether this trend sustains.`,
+      impact: `+${((latest / avg - 1) * 100).toFixed(0)}% above average`,
+    });
+  }
+
+  return recs;
+}
+
 export function generateRecommendations(industryId: string): Recommendation[] {
   const recs: Record<string, Recommendation[]> = {
     banking: [

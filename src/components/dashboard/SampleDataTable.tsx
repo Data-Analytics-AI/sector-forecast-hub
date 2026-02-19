@@ -3,21 +3,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, ArrowUpDown, MessageCircle } from 'lucide-react';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { generateForecastData, getIndustryContext } from '@/data/demoData';
+import { generateForecastData, getIndustryContext, type ForecastPoint } from '@/data/demoData';
 import { Button } from '@/components/ui/button';
 
 interface SampleDataTableProps {
   industryId: string;
   horizon: number;
+  customData?: ForecastPoint[];
 }
 
-const SampleDataTable = ({ industryId, horizon }: SampleDataTableProps) => {
+const SampleDataTable = ({ industryId, horizon, customData }: SampleDataTableProps) => {
   const [expanded, setExpanded] = useState(false);
   const [sortAsc, setSortAsc] = useState(true);
   const [showCopilot, setShowCopilot] = useState<number | null>(null);
 
   const ctx = useMemo(() => getIndustryContext(industryId), [industryId]);
-  const allData = useMemo(() => generateForecastData(industryId, horizon), [industryId, horizon]);
+  const allData = useMemo(() => customData ?? generateForecastData(industryId, horizon), [industryId, horizon, customData]);
 
   const sampleData = useMemo(() => {
     const historical = allData.filter(d => d.actual !== null);
