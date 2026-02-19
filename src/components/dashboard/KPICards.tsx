@@ -1,14 +1,15 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { generateKPIs } from '@/data/demoData';
+import { generateKPIs, generateCustomKPIs, type ForecastPoint } from '@/data/demoData';
 import { useMemo } from 'react';
 
 interface KPICardsProps {
   industryId: string;
+  customData?: ForecastPoint[];
 }
 
-export default function KPICards({ industryId }: KPICardsProps) {
-  const kpis = useMemo(() => generateKPIs(industryId), [industryId]);
+export default function KPICards({ industryId, customData }: KPICardsProps) {
+  const kpis = useMemo(() => customData ? generateCustomKPIs(industryId, customData) : generateKPIs(industryId), [industryId, customData]);
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

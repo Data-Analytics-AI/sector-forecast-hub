@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
 import { AlertTriangle, ArrowRight, Zap } from 'lucide-react';
-import { generateRecommendations } from '@/data/demoData';
+import { generateRecommendations, generateCustomRecommendations, type ForecastPoint } from '@/data/demoData';
 import { useMemo } from 'react';
 
 interface RecommendationsProps {
   industryId: string;
+  customData?: ForecastPoint[];
 }
 
 const priorityStyles = {
@@ -19,8 +20,8 @@ const priorityBadge = {
   low: 'bg-muted text-muted-foreground',
 };
 
-export default function Recommendations({ industryId }: RecommendationsProps) {
-  const recs = useMemo(() => generateRecommendations(industryId), [industryId]);
+export default function Recommendations({ industryId, customData }: RecommendationsProps) {
+  const recs = useMemo(() => customData ? generateCustomRecommendations(industryId, customData) : generateRecommendations(industryId), [industryId, customData]);
 
   return (
     <motion.div
