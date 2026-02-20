@@ -40,7 +40,7 @@ export default function KPICards({ industryId, customData }: KPICardsProps) {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent
-                    side="top"
+                    side="bottom"
                     className="max-w-[220px] text-xs leading-relaxed text-center z-[9999]"
                   >
                     {kpi.description}
