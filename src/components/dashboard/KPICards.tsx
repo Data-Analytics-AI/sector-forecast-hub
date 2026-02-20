@@ -19,14 +19,14 @@ export default function KPICards({ industryId, customData }: KPICardsProps) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 relative z-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {kpis.map((kpi, i) => (
           <motion.div
             key={kpi.label}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 + i * 0.05 }}
-            className="glass-card p-4 overflow-visible relative z-10 hover:z-20"
+            className="glass-card p-4"
           >
             <div className="flex items-start justify-between gap-1">
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider leading-tight">
