@@ -63,7 +63,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         {/* Navbar */}
-        <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+        <header className="border-b border-border/50 bg-card sticky top-0 z-40">
           <div className="max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
@@ -155,7 +155,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-border/50 bg-card sticky top-0 z-40">
         <div className="max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
