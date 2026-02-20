@@ -28,6 +28,7 @@ export interface KPIData {
   value: string;
   change: number;
   trend: 'up' | 'down' | 'neutral';
+  description?: string;
 }
 
 export interface Recommendation {
@@ -161,6 +162,45 @@ export function generateForecastData(industryId: string, horizon: number): Forec
   return points;
 }
 
+const kpiDescriptions: Record<string, string[]> = {
+  banking: [
+    'Total amount of cash withdrawn from ATMs and branches. Higher demand means you need more cash stocked at ATMs.',
+    'The percentage of time ATMs are working and available to customers. 100% means no downtime — the goal is to stay as close to this as possible.',
+    'The percentage of borrowers who may fail to repay their loans. A lower number is better — it means the loan portfolio is healthier.',
+    'The total value of loans given out. A rising number means the bank is growing its lending business.',
+  ],
+  retail: [
+    'Total money earned from sales across all your stores. This is your top-line income before any expenses are deducted.',
+    'The average amount a customer spends per shopping trip. A higher basket size means customers are buying more per visit.',
+    'How many times your entire stock is sold and replaced in a year. A higher number means products are moving fast and stock is not sitting idle.',
+    'The percentage of revenue left after paying for the cost of goods. For example, 34% means you keep ₦34 for every ₦100 sold.',
+  ],
+  manufacturing: [
+    'Total number of units produced by your factory lines in the period. More output generally means higher efficiency.',
+    'The percentage of products that have quality issues or are rejected. Lower is better — fewer defects means less waste and rework.',
+    'Overall Equipment Effectiveness — a score showing how well your machines are being used. 100% means perfect production with no downtime or waste.',
+    'The average time from when a production order is placed to when the product is ready. Shorter lead times mean faster delivery to customers.',
+  ],
+  healthcare: [
+    'The total number of patients admitted to your facility. A rising number may indicate increased demand for beds, staff, and resources.',
+    'The percentage of hospital beds currently occupied. High utilization (above 85%) may signal the need for more capacity.',
+    'The average time patients spend waiting before being attended to. Shorter wait times mean better patient experience and care.',
+    'The average cost of treating one patient. Keeping this low while maintaining quality is key to sustainable healthcare operations.',
+  ],
+  logistics: [
+    'The percentage of deliveries that arrive on time as promised. Higher is better — it reflects reliability and customer satisfaction.',
+    'The percentage of your vehicles or trucks actively being used. Higher utilization means fewer idle assets and better cost efficiency.',
+    'How much it costs to move goods per mile. Keeping this low improves profitability without compromising delivery quality.',
+    'Total number of packages or shipments handled in the period. Growth here signals a busier and expanding delivery operation.',
+  ],
+  energy: [
+    'The total electricity demand on the grid measured in Megawatts (MW). Higher load means more power is being consumed across the network.',
+    'How effectively the energy system converts input fuel or resources into usable electricity. Higher efficiency means less waste.',
+    'The average cost charged per kilowatt-hour of electricity. This affects both consumer bills and revenue for the energy provider.',
+    'The percentage of time the grid or power plant is fully operational without outages. Closer to 100% means a more reliable power supply.',
+  ],
+};
+
 export function generateKPIs(industryId: string): KPIData[] {
   const industry = industries.find(i => i.id === industryId);
   if (!industry) return [];
@@ -193,12 +233,14 @@ export function generateKPIs(industryId: string): KPIData[] {
   };
 
   const values = industryValues[industryId] || industryValues.retail;
+  const descriptions = kpiDescriptions[industryId] || [];
   
   return industry.kpis.map((label, i) => ({
     label,
     value: values[i].v,
     change: values[i].c,
     trend: values[i].c > 0 ? 'up' as const : values[i].c < 0 ? 'down' as const : 'neutral' as const,
+    description: descriptions[i],
   }));
 }
 
@@ -286,10 +328,10 @@ export function generateCustomKPIs(industryId: string, data: ForecastPoint[]): K
   const formatVal = (v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v.toFixed(0);
 
   return [
-    { label: `Latest ${ctx.metricName}`, value: formatVal(latest), change: parseFloat(change.toFixed(1)), trend: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral' },
-    { label: `Average ${ctx.metricName}`, value: formatVal(avg), change: 0, trend: 'neutral' },
-    { label: 'Next Period Forecast', value: formatVal(nextForecast), change: parseFloat(forecastChange.toFixed(1)), trend: forecastChange > 0 ? 'up' : forecastChange < 0 ? 'down' : 'neutral' },
-    { label: 'Data Points', value: `${actuals.length}`, change: forecasts.length, trend: 'up' },
+    { label: `Latest ${ctx.metricName}`, value: formatVal(latest), change: parseFloat(change.toFixed(1)), trend: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral', description: `The most recent recorded value in your uploaded data. The % change shows how it compares to the previous period.` },
+    { label: `Average ${ctx.metricName}`, value: formatVal(avg), change: 0, trend: 'neutral', description: `The average across all historical periods in your uploaded dataset. Useful for spotting whether performance is above or below the norm.` },
+    { label: 'Next Period Forecast', value: formatVal(nextForecast), change: parseFloat(forecastChange.toFixed(1)), trend: forecastChange > 0 ? 'up' : forecastChange < 0 ? 'down' : 'neutral', description: `The model's predicted value for the very next period after your data ends. The % shows how much it is expected to change from the latest actual.` },
+    { label: 'Data Points', value: `${actuals.length}`, change: forecasts.length, trend: 'up', description: `The number of historical data points you uploaded. More data points generally lead to more accurate predictions.` },
   ];
 }
 
