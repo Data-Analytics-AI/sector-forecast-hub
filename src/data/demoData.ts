@@ -162,44 +162,51 @@ export function generateForecastData(industryId: string, horizon: number): Forec
   return points;
 }
 
-const kpiDescriptions: Record<string, string[]> = {
-  banking: [
-    'Total amount of cash withdrawn from ATMs and branches. Higher demand means you need more cash stocked at ATMs.',
-    'The percentage of time ATMs are working and available to customers. 100% means no downtime — the goal is to stay as close to this as possible.',
-    'The percentage of borrowers who may fail to repay their loans. A lower number is better — it means the loan portfolio is healthier.',
-    'The total value of loans given out. A rising number means the bank is growing its lending business.',
-  ],
-  retail: [
-    'Total money earned from sales across all your stores. This is your top-line income before any expenses are deducted.',
-    'The average amount a customer spends per shopping trip. A higher basket size means customers are buying more per visit.',
-    'How many times your entire stock is sold and replaced in a year. A higher number means products are moving fast and stock is not sitting idle.',
-    'The percentage of revenue left after paying for the cost of goods. For example, 34% means you keep ₦34 for every ₦100 sold.',
-  ],
-  manufacturing: [
-    'Total number of units produced by your factory lines in the period. More output generally means higher efficiency.',
-    'The percentage of products that have quality issues or are rejected. Lower is better — fewer defects means less waste and rework.',
-    'Overall Equipment Effectiveness — a score showing how well your machines are being used. 100% means perfect production with no downtime or waste.',
-    'The average time from when a production order is placed to when the product is ready. Shorter lead times mean faster delivery to customers.',
-  ],
-  healthcare: [
-    'The total number of patients admitted to your facility. A rising number may indicate increased demand for beds, staff, and resources.',
-    'The percentage of hospital beds currently occupied. High utilization (above 85%) may signal the need for more capacity.',
-    'The average time patients spend waiting before being attended to. Shorter wait times mean better patient experience and care.',
-    'The average cost of treating one patient. Keeping this low while maintaining quality is key to sustainable healthcare operations.',
-  ],
-  logistics: [
-    'The percentage of deliveries that arrive on time as promised. Higher is better — it reflects reliability and customer satisfaction.',
-    'The percentage of your vehicles or trucks actively being used. Higher utilization means fewer idle assets and better cost efficiency.',
-    'How much it costs to move goods per mile. Keeping this low improves profitability without compromising delivery quality.',
-    'Total number of packages or shipments handled in the period. Growth here signals a busier and expanding delivery operation.',
-  ],
-  energy: [
-    'The total electricity demand on the grid measured in Megawatts (MW). Higher load means more power is being consumed across the network.',
-    'How effectively the energy system converts input fuel or resources into usable electricity. Higher efficiency means less waste.',
-    'The average cost charged per kilowatt-hour of electricity. This affects both consumer bills and revenue for the energy provider.',
-    'The percentage of time the grid or power plant is fully operational without outages. Closer to 100% means a more reliable power supply.',
-  ],
-};
+function generateKPIInterpretations(industryId: string, values: { v: string; c: number }[], labels: string[]): string[] {
+  const trendWord = (c: number) => c > 0 ? `up ${Math.abs(c)}% from last period, indicating positive growth` : c < 0 ? `down ${Math.abs(c)}% from last period, signaling a decline` : 'unchanged from last period, showing stability';
+
+  const interpretations: Record<string, (v: string, c: number, label: string) => string> = {
+    banking: (v, c, label) => {
+      if (label === 'Cash Demand') return `Your ATM and branch network processed ${v} in cash withdrawals this period — ${trendWord(c)}. ${c > 5 ? 'Consider increasing cash reserves at high-traffic ATMs.' : c < 0 ? 'You may be able to reduce idle cash in low-traffic locations.' : 'Current replenishment levels appear well-calibrated.'}`;
+      if (label === 'ATM Uptime') return `ATMs were operational ${v} of the time this period, ${trendWord(c)}. ${parseFloat(v) >= 98 ? 'Excellent reliability — customers rarely encounter downtime.' : 'Some machines may need maintenance attention to improve availability.'}`;
+      if (label === 'Default Risk') return `The loan default risk stands at ${v}, ${trendWord(c)}. ${c < 0 ? 'Great news — your portfolio health is improving.' : 'Rising risk suggests tightening lending criteria for certain segments.'}`;
+      return `Total loan disbursements reached ${v}, ${trendWord(c)}. ${c > 5 ? 'Strong lending growth — ensure capital adequacy ratios are maintained.' : 'Steady lending volume with room to explore underserved segments.'}`;
+    },
+    retail: (v, c, label) => {
+      if (label === 'Revenue') return `Your stores generated ${v} in total sales this period — ${trendWord(c)}. ${c > 5 ? 'Strong revenue momentum — consider scaling marketing spend.' : c < 0 ? 'Revenue pressure detected — review pricing and promotions.' : 'Revenue is holding steady.'}`;
+      if (label === 'Basket Size') return `Customers spent an average of ${v} per shopping trip, ${trendWord(c)}. ${c > 0 ? 'Cross-selling and upselling strategies appear to be working.' : 'Consider bundling or loyalty incentives to boost per-visit spending.'}`;
+      if (label === 'Inventory Turn') return `Your inventory turned over ${v} times this period, ${trendWord(c)}. ${c > 0 ? 'Products are moving quickly — stock management is efficient.' : 'Slower turnover suggests some items may need markdowns or promotion.'}`;
+      return `Your profit margin is ${v}, ${trendWord(c)}. ${c < 0 ? 'Margin compression detected — review supplier costs and pricing strategy.' : 'Healthy margins indicate good cost control.'}`;
+    },
+    manufacturing: (v, c, label) => {
+      if (label === 'Output') return `Factory lines produced ${v} units this period, ${trendWord(c)}. ${c > 0 ? 'Production capacity is being well utilized.' : 'Consider investigating bottlenecks or scheduling issues.'}`;
+      if (label === 'Defect Rate') return `Quality issues affected ${v} of production, ${trendWord(c)}. ${c < 0 ? 'Quality is improving — fewer defects mean less waste and rework.' : 'Rising defects warrant a review of raw materials and equipment calibration.'}`;
+      if (label === 'OEE') return `Overall Equipment Effectiveness is at ${v}, ${trendWord(c)}. ${parseFloat(v) >= 85 ? 'World-class performance — machines are running efficiently.' : 'There is room to improve uptime, speed, or quality yields.'}`;
+      return `Average production lead time is ${v}, ${trendWord(c)}. ${c < 0 ? 'Faster turnaround means customers get orders sooner.' : 'Longer lead times may impact delivery commitments.'}`;
+    },
+    healthcare: (v, c, label) => {
+      if (label === 'Admissions') return `Your facility admitted ${v} patients this period, ${trendWord(c)}. ${c > 5 ? 'Surging admissions — ensure staffing and bed capacity can handle the load.' : 'Patient volume is within manageable levels.'}`;
+      if (label === 'Bed Util.') return `Hospital bed utilization is at ${v}, ${trendWord(c)}. ${parseFloat(v) > 90 ? 'Near-full capacity — consider contingency overflow plans.' : 'Adequate capacity headroom exists for demand spikes.'}`;
+      if (label === 'Wait Time') return `Patients waited an average of ${v} before being seen, ${trendWord(c)}. ${c < 0 ? 'Wait times are improving — patients are being seen faster.' : 'Rising wait times may hurt patient satisfaction — review triage processes.'}`;
+      return `The average cost per patient is ${v}, ${trendWord(c)}. ${c < 0 ? 'Cost efficiency is improving without compromising care quality.' : 'Rising costs warrant a review of resource allocation and procurement.'}`;
+    },
+    logistics: (v, c, label) => {
+      if (label === 'On-Time %') return `${v} of deliveries arrived on schedule this period, ${trendWord(c)}. ${parseFloat(v) >= 95 ? 'Excellent delivery reliability — SLA commitments are being met.' : 'Some routes may need attention to improve punctuality.'}`;
+      if (label === 'Fleet Util.') return `${v} of your fleet was actively deployed, ${trendWord(c)}. ${c > 0 ? 'More vehicles are being utilized — fewer idle assets.' : 'Consider rebalancing routes to reduce underused vehicles.'}`;
+      if (label === 'Cost/Mile') return `Transportation cost is ${v} per mile, ${trendWord(c)}. ${c < 0 ? 'Cost per mile is dropping — fuel or route optimization is paying off.' : 'Rising costs may require renegotiating carrier contracts.'}`;
+      return `Your network handled ${v} shipments this period, ${trendWord(c)}. ${c > 5 ? 'Volume is surging — ensure capacity can keep up with demand.' : 'Stable throughput with current fleet capacity.'}`;
+    },
+    energy: (v, c, label) => {
+      if (label === 'Load (MW)') return `Grid demand reached ${v} MW this period, ${trendWord(c)}. ${c > 5 ? 'Rising consumption — ensure generation capacity is scaled to meet peak demand.' : 'Load levels are within normal operating range.'}`;
+      if (label === 'Efficiency') return `Energy conversion efficiency is at ${v}, ${trendWord(c)}. ${c > 0 ? 'Improving efficiency means less fuel waste per unit of electricity generated.' : 'Declining efficiency may indicate aging equipment or suboptimal fuel mix.'}`;
+      if (label === 'Price/kWh') return `Electricity is priced at ${v} per kWh, ${trendWord(c)}. ${c < 0 ? 'Lower prices benefit consumers but may pressure provider margins.' : 'Price increases reflect rising input costs or demand surges.'}`;
+      return `Grid uptime is at ${v}, ${trendWord(c)}. ${parseFloat(v) >= 99 ? 'Near-perfect reliability — minimal outages experienced.' : 'Uptime below target — investigate outage causes and schedule maintenance.'}`;
+    },
+  };
+
+  const interpret = interpretations[industryId] || interpretations.retail;
+  return labels.map((label, i) => interpret(values[i].v, values[i].c, label));
+}
 
 export function generateKPIs(industryId: string): KPIData[] {
   const industry = industries.find(i => i.id === industryId);
@@ -233,7 +240,7 @@ export function generateKPIs(industryId: string): KPIData[] {
   };
 
   const values = industryValues[industryId] || industryValues.retail;
-  const descriptions = kpiDescriptions[industryId] || [];
+  const descriptions = generateKPIInterpretations(industryId, values, industry.kpis);
   
   return industry.kpis.map((label, i) => ({
     label,
@@ -328,10 +335,10 @@ export function generateCustomKPIs(industryId: string, data: ForecastPoint[]): K
   const formatVal = (v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v.toFixed(0);
 
   return [
-    { label: `Latest ${ctx.metricName}`, value: formatVal(latest), change: parseFloat(change.toFixed(1)), trend: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral', description: `The most recent recorded value in your uploaded data. The % change shows how it compares to the previous period.` },
-    { label: `Average ${ctx.metricName}`, value: formatVal(avg), change: 0, trend: 'neutral', description: `The average across all historical periods in your uploaded dataset. Useful for spotting whether performance is above or below the norm.` },
-    { label: 'Next Period Forecast', value: formatVal(nextForecast), change: parseFloat(forecastChange.toFixed(1)), trend: forecastChange > 0 ? 'up' : forecastChange < 0 ? 'down' : 'neutral', description: `The model's predicted value for the very next period after your data ends. The % shows how much it is expected to change from the latest actual.` },
-    { label: 'Data Points', value: `${actuals.length}`, change: forecasts.length, trend: 'up', description: `The number of historical data points you uploaded. More data points generally lead to more accurate predictions.` },
+    { label: `Latest ${ctx.metricName}`, value: formatVal(latest), change: parseFloat(change.toFixed(1)), trend: change > 0 ? 'up' : change < 0 ? 'down' : 'neutral', description: `Your most recent ${ctx.metricName} came in at ${formatVal(latest)} ${ctx.unit}. That's ${change > 0 ? `up ${Math.abs(change).toFixed(1)}% from the previous period — a positive trend suggesting growing ${ctx.metricName}.` : change < 0 ? `down ${Math.abs(change).toFixed(1)}% from the previous period — worth monitoring for further decline.` : 'unchanged from the previous period.'}` },
+    { label: `Average ${ctx.metricName}`, value: formatVal(avg), change: 0, trend: 'neutral', description: `Across all ${actuals.length} periods in your data, the average ${ctx.metricName} is ${formatVal(avg)} ${ctx.unit}. ${latest > avg * 1.1 ? `Your latest value is ${((latest / avg - 1) * 100).toFixed(0)}% above this average — performance is trending higher than normal.` : latest < avg * 0.9 ? `Your latest value is ${((1 - latest / avg) * 100).toFixed(0)}% below this average — recent performance is lagging.` : 'Your latest value is close to the average — performance is consistent.'}` },
+    { label: 'Next Period Forecast', value: formatVal(nextForecast), change: parseFloat(forecastChange.toFixed(1)), trend: forecastChange > 0 ? 'up' : forecastChange < 0 ? 'down' : 'neutral', description: `The model predicts ${formatVal(nextForecast)} ${ctx.unit} for the next period — ${forecastChange > 0 ? `a ${forecastChange.toFixed(1)}% increase from the latest actual. Prepare for higher ${ctx.metricName}.` : forecastChange < 0 ? `a ${Math.abs(forecastChange).toFixed(1)}% decrease. Consider adjusting plans for lower ${ctx.metricName}.` : `flat compared to the latest period.`}` },
+    { label: 'Data Points', value: `${actuals.length}`, change: forecasts.length, trend: 'up', description: `You uploaded ${actuals.length} historical data points, and the model generated ${forecasts.length} forecast periods. ${actuals.length >= 12 ? 'With a full year of data, the model can capture seasonal patterns effectively.' : actuals.length >= 6 ? 'A decent amount of data — predictions will improve with more historical periods.' : 'Limited data available — consider uploading more periods for more reliable forecasts.'}` },
   ];
 }
 
