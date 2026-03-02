@@ -1,6 +1,12 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { industries, type Industry } from '@/data/demoData';
+import { motion } from 'framer-motion';
+import { industries } from '@/data/demoData';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface TemplateSelectorProps {
   selected: string;
@@ -8,52 +14,46 @@ interface TemplateSelectorProps {
 }
 
 export default function TemplateSelector({ selected, onSelect }: TemplateSelectorProps) {
-  const hasSelection = !!selected;
+  const current = industries.find(i => i.id === selected);
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <AnimatePresence mode="popLayout">
-          {industries.map((industry, i) => {
-            const isSelected = selected === industry.id;
-            if (hasSelection && !isSelected) return null;
-
-            return (
-              <motion.button
-                key={industry.id}
-                layout
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                transition={{ delay: hasSelection ? 0 : i * 0.05, duration: 0.3 }}
-                onClick={() => onSelect(industry.id)}
-                className={`glass-card p-4 text-left transition-all duration-200 hover:scale-[1.02] cursor-pointer ${
-                  isSelected
-                    ? 'border-primary/60 glow-primary'
-                    : 'hover:border-primary/30'
-                }`}
-              >
-                <span className="text-2xl">{industry.icon}</span>
-                <h3 className="mt-2 text-sm font-semibold text-foreground">{industry.name}</h3>
-                <p className="mt-1 text-xs text-muted-foreground leading-tight">{industry.description}</p>
-              </motion.button>
-            );
-          })}
-        </AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="glass-card p-6 max-w-md"
+    >
+      <div className="flex items-start gap-4">
+        {current && (
+          <span className="text-3xl mt-1">{current.icon}</span>
+        )}
+        <div className="flex-1 space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">Forecast Template</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Select the sector that best fits your use case
+            </p>
+          </div>
+          <Select value={selected || undefined} onValueChange={onSelect}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Choose a sector…" />
+            </SelectTrigger>
+            <SelectContent>
+              {industries.map((industry) => (
+                <SelectItem key={industry.id} value={industry.id}>
+                  <span className="flex items-center gap-2">
+                    <span>{industry.icon}</span>
+                    <span>{industry.name}</span>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {current && (
+            <p className="text-xs text-muted-foreground leading-relaxed">{current.description}</p>
+          )}
+        </div>
       </div>
-
-      {hasSelection && (
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          onClick={() => onSelect('')}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors mx-auto"
-        >
-          <ChevronDown className="w-3.5 h-3.5" />
-          Show all sectors
-        </motion.button>
-      )}
-    </div>
+    </motion.div>
   );
 }
