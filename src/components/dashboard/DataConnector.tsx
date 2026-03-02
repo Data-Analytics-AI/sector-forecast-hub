@@ -19,14 +19,7 @@ interface DataConnectorProps {
   selectedIndustry?: string | null;
 }
 
-const industryValueColumns: Record<string, string> = {
-  banking: 'Cash Demand',
-  retail: 'Sales Units',
-  manufacturing: 'Production Output',
-  healthcare: 'Patient Admissions',
-  logistics: 'Shipment Volume',
-  energy: 'Load Demand',
-};
+const VALUE_COLUMN = 'Demand Volume';
 
 function parseCSV(text: string, valueColumn: string): ForecastPoint[] {
   const lines = text.trim().split('\n');
@@ -58,7 +51,7 @@ function parseCSV(text: string, valueColumn: string): ForecastPoint[] {
 }
 
 export default function DataConnector({ onDataLoaded, onDismiss, selectedIndustry }: DataConnectorProps) {
-  const valueColumn = selectedIndustry ? industryValueColumns[selectedIndustry] || 'Value' : null;
+  const valueColumn = VALUE_COLUMN;
   const [tab, setTab] = useState('csv');
   const [dragOver, setDragOver] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
