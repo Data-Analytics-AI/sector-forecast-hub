@@ -120,9 +120,9 @@ const Index = () => {
             transition={{ duration: 0.5 }}
           >
             <p className="text-xs text-muted-foreground mb-3 uppercase tracking-wider font-medium">
-              Choose Industry Template
+              Select Your Sector
             </p>
-            <TemplateSelector selected={selectedIndustry ?? ''} onSelect={(id) => setSelectedIndustry(id || null)} />
+            <TemplateSelector selected={selectedIndustry ?? ''} onSelect={(id) => setSelectedIndustry(id)} />
           </motion.div>
 
           {selectedIndustry && (
