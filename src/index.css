@@ -41,6 +41,10 @@
     --chart-neutral: 215 12% 50%;
     --chart-confidence: 174 60% 40%;
 
+    --primary-glow: 174 65% 50%;
+    --success: 160 60% 45%;
+    --success-foreground: 220 20% 7%;
+
     --sidebar-background: 220 18% 10%;
     --sidebar-foreground: 210 20% 82%;
     --sidebar-primary: 174 60% 40%;
@@ -76,9 +80,18 @@
     box-shadow: 0 0 20px hsl(174 60% 40% / 0.15), 0 0 60px hsl(174 60% 40% / 0.05);
   }
 
+  .glow-primary-lg {
+    box-shadow: 0 0 40px hsl(174 60% 40% / 0.2), 0 0 80px hsl(174 60% 40% / 0.08);
+  }
+
   .gradient-text {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(135deg, hsl(174 60% 50%), hsl(174 60% 35%));
+  }
+
+  .gradient-text-hero {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(210 20% 95%), hsl(174 60% 55%));
   }
 
   .kpi-up {
@@ -87,5 +100,16 @@
 
   .kpi-down {
     color: hsl(var(--chart-down));
+  }
+
+  .hero-grid-bg {
+    background-image:
+      linear-gradient(hsl(220 14% 18% / 0.4) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(220 14% 18% / 0.4) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .hero-radial {
+    background: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(174 60% 40% / 0.12), transparent);
   }
 }
