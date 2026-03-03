@@ -4,9 +4,13 @@ import {
   BarChart3, TrendingUp, Package, Clock, DollarSign,
   Upload, Plug, Database, LineChart, Truck,
   ArrowRight, BookOpen, LifeBuoy, Mail,
-  Activity, Target, Boxes, Zap
+  Activity, Target, Boxes, Zap,
+  LayoutDashboard, FileText, User, LogIn, LogOut, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { useMemo } from 'react';
 import { generateForecastData } from '@/data/demoData';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis } from 'recharts';
@@ -20,11 +24,8 @@ const fadeUp = {
 };
 
 const navLinks = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Forecasts', href: '/dashboard' },
-  { label: 'Optimization', href: '/dashboard' },
-  { label: 'Reports', href: '/dashboard' },
-  { label: 'Settings', href: '/dashboard' },
+  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Reports', href: '/dashboard', icon: FileText },
 ];
 
 const kpis = [
@@ -62,19 +63,34 @@ const Index = () => {
               <Link
                 key={link.label}
                 to={link.href}
-                className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-secondary/60"
+                className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-secondary/60 flex items-center gap-1.5"
               >
+                <link.icon className="w-4 h-4" />
                 {link.label}
               </Link>
             ))}
           </div>
 
-          <Link to="/dashboard">
-            <Button size="sm" className="gap-1.5 font-semibold">
-              Open Dashboard
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="gap-1.5 font-semibold">
+                <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem className="gap-2 cursor-pointer">
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 cursor-pointer text-destructive">
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
 
