@@ -127,12 +127,14 @@ const Index = () => {
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                <Link to="/dashboard">
-                  <Button size="lg" className="gap-2 font-semibold glow-primary text-base px-8">
-                    <Zap className="w-4 h-4" />
-                    Run Forecast
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  className="gap-2 font-semibold glow-primary text-base px-8"
+                  onClick={() => document.getElementById('quick-actions')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  <Zap className="w-4 h-4" />
+                  Run Forecast
+                </Button>
                 <Link to="/dashboard">
                   <Button size="lg" variant="outline" className="gap-2 font-semibold text-base px-8">
                     <Truck className="w-4 h-4" />
@@ -259,7 +261,7 @@ const Index = () => {
       </section>
 
       {/* ── Quick Actions ── */}
-      <section className="py-16 border-t border-border/30">
+      <section id="quick-actions" className="py-16 border-t border-border/30">
         <div className="max-w-[1280px] mx-auto px-6">
           <motion.div
             initial="hidden"
