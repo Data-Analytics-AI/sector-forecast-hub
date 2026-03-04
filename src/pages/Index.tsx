@@ -36,7 +36,7 @@ const kpis = [
 ];
 
 const quickActions = [
-  { icon: Upload, label: 'Upload Data', description: 'Import CSV or Excel files', color: 'bg-primary/15 text-primary', href: '/dashboard' },
+  { icon: Upload, label: 'Upload Data', description: 'Import CSV or Excel files', color: 'bg-primary/15 text-primary', href: '/upload-data' },
   { icon: Plug, label: 'Connect API', description: 'Link external data sources', color: 'bg-primary/15 text-primary', href: '/connect-api' },
   { icon: Database, label: 'Connect Database', description: 'Direct database integration', color: 'bg-primary/15 text-primary', href: '/connect-database' },
   { icon: LineChart, label: 'Generate Forecast', description: 'Run predictive models', color: 'bg-primary/15 text-primary', href: '/dashboard' },
