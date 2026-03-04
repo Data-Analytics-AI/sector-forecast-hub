@@ -23,6 +23,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/connect-database" element={<ConnectDatabase />} />
           <Route path="/connect-api" element={<ConnectAPI />} />
+          <Route path="/upload-data" element={<UploadData />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
