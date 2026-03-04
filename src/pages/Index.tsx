@@ -36,11 +36,11 @@ const kpis = [
 ];
 
 const quickActions = [
-  { icon: Upload, label: 'Upload Data', description: 'Import CSV or Excel files', color: 'bg-primary/15 text-primary' },
-  { icon: Plug, label: 'Connect API', description: 'Link external data sources', color: 'bg-primary/15 text-primary' },
-  { icon: Database, label: 'Connect Database', description: 'Direct database integration', color: 'bg-primary/15 text-primary' },
-  { icon: LineChart, label: 'Generate Forecast', description: 'Run predictive models', color: 'bg-primary/15 text-primary' },
-  { icon: Truck, label: 'Optimize Logistics', description: 'Route & inventory optimization', color: 'bg-primary/15 text-primary' },
+  { icon: Upload, label: 'Upload Data', description: 'Import CSV or Excel files', color: 'bg-primary/15 text-primary', href: '/dashboard' },
+  { icon: Plug, label: 'Connect API', description: 'Link external data sources', color: 'bg-primary/15 text-primary', href: '/connect-api' },
+  { icon: Database, label: 'Connect Database', description: 'Direct database integration', color: 'bg-primary/15 text-primary', href: '/connect-database' },
+  { icon: LineChart, label: 'Generate Forecast', description: 'Run predictive models', color: 'bg-primary/15 text-primary', href: '/dashboard' },
+  { icon: Truck, label: 'Optimize Logistics', description: 'Route & inventory optimization', color: 'bg-primary/15 text-primary', href: '/dashboard' },
 ];
 
 const Index = () => {
@@ -285,7 +285,7 @@ const Index = () => {
                 variants={fadeUp}
                 custom={i}
               >
-                <Link to="/dashboard">
+                <Link to={action.href}>
                   <div className="glass-card p-5 text-center group hover:border-primary/40 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-center gap-3">
                     <div className={`w-12 h-12 rounded-xl ${action.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                       <action.icon className="w-5 h-5" />
