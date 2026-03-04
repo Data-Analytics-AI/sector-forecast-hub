@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ConnectDatabase from "./pages/ConnectDatabase";
 import ConnectAPI from "./pages/ConnectAPI";
+import UploadData from "./pages/UploadData";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
