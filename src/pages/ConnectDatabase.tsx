@@ -3,17 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Database, ArrowLeft, Eye, EyeOff, CheckCircle2, XCircle, Loader2, Info,
-  Server, Hash, User, Lock, HardDrive
+  Server, Hash, User, Lock, HardDrive, Send, AlertCircle, Code2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import {
   Tooltip, TooltipContent, TooltipTrigger
 } from '@/components/ui/tooltip';
+import ForecastParams from '@/components/forecast/ForecastParams';
+import ForecastResults, { ForecastRow } from '@/components/forecast/ForecastResults';
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
 
@@ -35,6 +38,15 @@ const defaultPorts: Record<string, string> = {
   sqlite: '',
 };
 
+const dbSchemes: Record<string, string> = {
+  postgresql: 'postgresql',
+  mysql: 'mysql',
+  mssql: 'mssql',
+  oracle: 'oracle',
+  mongodb: 'mongodb',
+  sqlite: 'sqlite',
+};
+
 const fields = [
   { id: 'host', label: 'Host', icon: Server, tooltip: 'The hostname or IP address of your database server', placeholder: 'localhost or 192.168.1.1' },
   { id: 'port', label: 'Port', icon: Hash, tooltip: 'The port number your database listens on', placeholder: '5432' },
@@ -43,11 +55,29 @@ const fields = [
   { id: 'database', label: 'Database Name', icon: HardDrive, tooltip: 'The specific database or schema to connect to', placeholder: 'my_database' },
 ] as const;
 
+function buildConnectionString(dbType: string, form: Record<string, string>): string {
+  const scheme = dbSchemes[dbType] || dbType;
+  const userPart = form.password
+    ? `${form.username}:${form.password}`
+    : form.username;
+  const portPart = form.port ? `:${form.port}` : '';
+  return `${scheme}://${userPart}@${form.host}${portPart}/${form.database}`;
+}
+
 export default function ConnectDatabase() {
   const [dbType, setDbType] = useState('');
   const [form, setForm] = useState({ host: '', port: '', username: '', password: '', database: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<ConnectionStatus>('idle');
+  const [sqlQuery, setSqlQuery] = useState('');
+
+  // Forecast params
+  const [dateCol, setDateCol] = useState('');
+  const [valueCol, setValueCol] = useState('');
+  const [horizon, setHorizon] = useState(30);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState('');
+  const [forecastData, setForecastData] = useState<ForecastRow[] | null>(null);
 
   const handleDbTypeChange = (value: string) => {
     setDbType(value);
@@ -68,9 +98,47 @@ export default function ConnectDatabase() {
     setStatus(Math.random() > 0.3 ? 'success' : 'error');
   };
 
+  const handleLoadData = async () => {
+    if (!isFormValid || !dateCol || !valueCol || !sqlQuery) return;
+    setForecastLoading(true);
+    setForecastError('');
+    setForecastData(null);
+
+    try {
+      const connectionString = buildConnectionString(dbType, form);
+      const res = await fetch('http://127.0.0.1:8000/api/forecast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_type: 'db',
+          source_path: connectionString,
+          query: sqlQuery,
+          date_col: dateCol,
+          value_col: valueCol,
+          horizon,
+        }),
+      });
+      const json = await res.json();
+      if (json.error) {
+        setForecastError(json.error);
+      } else if (json.forecast) {
+        setForecastData(json.forecast);
+      } else if (Array.isArray(json)) {
+        setForecastData(json);
+      } else {
+        setForecastError('Unexpected response format from server.');
+      }
+    } catch (err: any) {
+      setForecastError(err.message || 'Failed to connect to forecast server.');
+    } finally {
+      setForecastLoading(false);
+    }
+  };
+
+  const canLoadData = status === 'success' && dateCol && valueCol && horizon > 0 && sqlQuery;
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <nav className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-border/40">
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center gap-3">
           <Link to="/">
@@ -212,13 +280,6 @@ export default function ConnectDatabase() {
                     <p className="text-foreground font-semibold mt-0.5 truncate">{form.database}</p>
                   </div>
                 </div>
-                <div className="mt-4 flex gap-3">
-                  <Link to="/dashboard" className="flex-1">
-                    <Button className="w-full font-semibold gap-2">
-                      Continue to Dashboard
-                    </Button>
-                  </Link>
-                </div>
               </motion.div>
             )}
 
@@ -241,6 +302,70 @@ export default function ConnectDatabase() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Forecast section after successful connection */}
+          {status === 'success' && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="mt-8">
+              <div className="glass-card p-6 space-y-5">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Send className="h-5 w-5 text-primary" /> Forecast Configuration
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">Write a SQL query and specify columns to run the forecast.</p>
+                </div>
+
+                {/* SQL Query */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <Code2 className="w-3.5 h-3.5 text-muted-foreground" /> SQL Query
+                  </Label>
+                  <Textarea
+                    value={sqlQuery}
+                    onChange={(e) => setSqlQuery(e.target.value)}
+                    placeholder="SELECT date, sales FROM orders WHERE date >= '2024-01-01'"
+                    className="bg-background/50 font-mono text-sm min-h-[100px]"
+                  />
+                </div>
+
+                <ForecastParams
+                  dateCol={dateCol}
+                  valueCol={valueCol}
+                  horizon={horizon}
+                  onDateColChange={setDateCol}
+                  onValueColChange={setValueCol}
+                  onHorizonChange={setHorizon}
+                />
+                <Button
+                  onClick={handleLoadData}
+                  disabled={!canLoadData || forecastLoading}
+                  className="w-full gap-2 font-semibold"
+                  size="lg"
+                >
+                  {forecastLoading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Running Forecast…</>
+                  ) : (
+                    <><Send className="w-4 h-4" /> Load Data & Forecast</>
+                  )}
+                </Button>
+
+                {forecastError && (
+                  <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                    <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-destructive">Forecast Error</p>
+                      <p className="text-xs text-destructive/80 mt-0.5">{forecastError}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {forecastData && (
+            <div className="mt-8">
+              <ForecastResults data={forecastData} />
+            </div>
+          )}
         </motion.div>
       </div>
     </div>
