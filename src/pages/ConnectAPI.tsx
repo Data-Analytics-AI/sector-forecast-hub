@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Plug, ArrowLeft, ArrowRight, CheckCircle2, XCircle, Loader2,
-  Globe, Key, Code2, Wifi, Check
+  Globe, Key, Code2, Wifi, Check, Send, AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
+import ForecastParams from '@/components/forecast/ForecastParams';
+import ForecastResults, { ForecastRow } from '@/components/forecast/ForecastResults';
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
 
@@ -34,6 +36,14 @@ export default function ConnectAPI() {
   const [authHeader, setAuthHeader] = useState('Authorization');
   const [status, setStatus] = useState<ConnectionStatus>('idle');
 
+  // Forecast params
+  const [dateCol, setDateCol] = useState('');
+  const [valueCol, setValueCol] = useState('');
+  const [horizon, setHorizon] = useState(30);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState('');
+  const [forecastData, setForecastData] = useState<ForecastRow[] | null>(null);
+
   const canProceed = [
     () => !!apiType,
     () => !!endpoint,
@@ -54,9 +64,45 @@ export default function ConnectAPI() {
     setStatus(Math.random() > 0.3 ? 'success' : 'error');
   };
 
+  const handleLoadData = async () => {
+    if (!endpoint || !dateCol || !valueCol) return;
+    setForecastLoading(true);
+    setForecastError('');
+    setForecastData(null);
+
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/forecast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_type: 'api',
+          source_path: endpoint,
+          date_col: dateCol,
+          value_col: valueCol,
+          horizon,
+        }),
+      });
+      const json = await res.json();
+      if (json.error) {
+        setForecastError(json.error);
+      } else if (json.forecast) {
+        setForecastData(json.forecast);
+      } else if (Array.isArray(json)) {
+        setForecastData(json);
+      } else {
+        setForecastError('Unexpected response format from server.');
+      }
+    } catch (err: any) {
+      setForecastError(err.message || 'Failed to connect to forecast server.');
+    } finally {
+      setForecastLoading(false);
+    }
+  };
+
+  const canLoadData = status === 'success' && dateCol && valueCol && horizon > 0;
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <nav className="sticky top-0 z-50 bg-card/90 backdrop-blur-md border-b border-border/40">
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center gap-3">
           <Link to="/">
@@ -76,7 +122,6 @@ export default function ConnectAPI() {
 
           {/* Vertical Stepper */}
           <div className="flex gap-8">
-            {/* Stepper Rail */}
             <div className="hidden sm:flex flex-col items-center pt-1">
               {steps.map((step, i) => (
                 <div key={i} className="flex flex-col items-center">
@@ -98,10 +143,8 @@ export default function ConnectAPI() {
               ))}
             </div>
 
-            {/* Step Content */}
             <div className="flex-1 min-w-0">
               <AnimatePresence mode="wait">
-                {/* Step Labels (mobile) */}
                 <div className="sm:hidden mb-4">
                   <p className="text-xs text-muted-foreground font-mono">Step {currentStep + 1} of 3</p>
                   <p className="text-sm font-semibold text-foreground">{steps[currentStep].label}</p>
@@ -201,7 +244,6 @@ export default function ConnectAPI() {
                         <p className="text-xs text-muted-foreground">Verify that ForecastIQ can reach your API endpoint.</p>
                       </div>
 
-                      {/* Connection summary before test */}
                       <div className="grid grid-cols-2 gap-3 text-xs font-mono">
                         <div className="bg-secondary/40 rounded-lg px-3 py-2">
                           <span className="text-muted-foreground">Protocol</span>
@@ -245,7 +287,6 @@ export default function ConnectAPI() {
                       </Button>
                     </div>
 
-                    {/* Result cards */}
                     <AnimatePresence>
                       {status === 'success' && (
                         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-5 glass-card p-5 border-primary/30">
@@ -258,9 +299,6 @@ export default function ConnectAPI() {
                               <p className="text-xs text-muted-foreground">Endpoint is reachable and responding correctly.</p>
                             </div>
                           </div>
-                          <Link to="/dashboard">
-                            <Button className="w-full font-semibold gap-2">Continue to Dashboard</Button>
-                          </Link>
                         </motion.div>
                       )}
                       {status === 'error' && (
@@ -281,7 +319,6 @@ export default function ConnectAPI() {
                 )}
               </AnimatePresence>
 
-              {/* Navigation */}
               <div className="flex justify-between mt-6">
                 <Button variant="outline" onClick={handleBack} disabled={currentStep === 0} className="gap-1.5 font-medium">
                   <ArrowLeft className="w-4 h-4" /> Back
@@ -294,6 +331,56 @@ export default function ConnectAPI() {
               </div>
             </div>
           </div>
+
+          {/* Forecast section after successful connection */}
+          {status === 'success' && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="mt-10">
+              <div className="glass-card p-6 space-y-5">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Send className="h-5 w-5 text-primary" /> Forecast Configuration
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">Specify columns and horizon, then load data for forecasting.</p>
+                </div>
+                <ForecastParams
+                  dateCol={dateCol}
+                  valueCol={valueCol}
+                  horizon={horizon}
+                  onDateColChange={setDateCol}
+                  onValueColChange={setValueCol}
+                  onHorizonChange={setHorizon}
+                />
+                <Button
+                  onClick={handleLoadData}
+                  disabled={!canLoadData || forecastLoading}
+                  className="w-full gap-2 font-semibold"
+                  size="lg"
+                >
+                  {forecastLoading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Running Forecast…</>
+                  ) : (
+                    <><Send className="w-4 h-4" /> Load Data & Forecast</>
+                  )}
+                </Button>
+
+                {forecastError && (
+                  <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                    <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-destructive">Forecast Error</p>
+                      <p className="text-xs text-destructive/80 mt-0.5">{forecastError}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {forecastData && (
+            <div className="mt-8">
+              <ForecastResults data={forecastData} />
+            </div>
+          )}
         </motion.div>
       </div>
     </div>

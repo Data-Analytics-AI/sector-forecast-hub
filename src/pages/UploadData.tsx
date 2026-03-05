@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, FileUp, CheckCircle2, AlertCircle, ArrowLeft,
-  FileSpreadsheet, X, Eye, Table2
+  FileSpreadsheet, X, Eye, Table2, Loader2, Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import ForecastParams from '@/components/forecast/ForecastParams';
+import ForecastResults, { ForecastRow } from '@/components/forecast/ForecastResults';
 
 type UploadStatus = 'idle' | 'validating' | 'uploading' | 'success' | 'error';
 
@@ -24,7 +26,7 @@ interface ParsedData {
 }
 
 const ACCEPTED_FORMATS = ['.csv', '.xlsx', '.xls'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -42,6 +44,11 @@ function parseCSV(text: string): { headers: string[]; rows: string[][] } {
   return { headers, rows };
 }
 
+function getSourceType(fileName: string): 'csv' | 'excel' {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  return ext === 'csv' ? 'csv' : 'excel';
+}
+
 export default function UploadData() {
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [progress, setProgress] = useState(0);
@@ -49,7 +56,16 @@ export default function UploadData() {
   const [error, setError] = useState('');
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Forecast params
+  const [dateCol, setDateCol] = useState('');
+  const [valueCol, setValueCol] = useState('');
+  const [horizon, setHorizon] = useState(30);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState('');
+  const [forecastData, setForecastData] = useState<ForecastRow[] | null>(null);
 
   const validateFile = (file: File): string | null => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
@@ -68,6 +84,9 @@ export default function UploadData() {
     setProgress(0);
     setParsedData(null);
     setShowPreview(false);
+    setSelectedFile(file);
+    setForecastData(null);
+    setForecastError('');
 
     const validationError = validateFile(file);
     if (validationError) {
@@ -130,13 +149,52 @@ export default function UploadData() {
     setError('');
     setParsedData(null);
     setShowPreview(false);
+    setSelectedFile(null);
+    setForecastData(null);
+    setForecastError('');
   };
 
+  const handleLoadData = async () => {
+    if (!selectedFile || !dateCol || !valueCol) return;
+    setForecastLoading(true);
+    setForecastError('');
+    setForecastData(null);
+
+    try {
+      const sourceType = getSourceType(selectedFile.name);
+      const res = await fetch('http://127.0.0.1:8000/api/forecast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_type: sourceType,
+          source_path: selectedFile.name,
+          date_col: dateCol,
+          value_col: valueCol,
+          horizon,
+        }),
+      });
+      const json = await res.json();
+      if (json.error) {
+        setForecastError(json.error);
+      } else if (json.forecast) {
+        setForecastData(json.forecast);
+      } else if (Array.isArray(json)) {
+        setForecastData(json);
+      } else {
+        setForecastError('Unexpected response format from server.');
+      }
+    } catch (err: any) {
+      setForecastError(err.message || 'Failed to connect to forecast server.');
+    } finally {
+      setForecastLoading(false);
+    }
+  };
+
+  const canLoadData = status === 'success' && dateCol && valueCol && horizon > 0;
   const previewRows = parsedData?.rows.slice(0, 8) ?? [];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border/60 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="max-w-4xl mx-auto flex items-center gap-3 px-6 py-4">
           <Link to="/">
@@ -165,7 +223,6 @@ export default function UploadData() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              {/* Drop Zone */}
               <AnimatePresence mode="wait">
                 {status === 'idle' || status === 'error' ? (
                   <motion.div
@@ -250,7 +307,6 @@ export default function UploadData() {
                     exit={{ opacity: 0 }}
                     className="space-y-5"
                   >
-                    {/* Success Banner */}
                     <div className="flex items-start gap-4 rounded-xl bg-primary/5 border border-primary/20 p-5">
                       <div className="rounded-full bg-primary/15 p-2.5 mt-0.5">
                         <CheckCircle2 className="h-6 w-6 text-primary" />
@@ -278,7 +334,6 @@ export default function UploadData() {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex flex-wrap gap-3">
                       <Button
                         variant="outline"
@@ -292,14 +347,8 @@ export default function UploadData() {
                       <Button variant="outline" size="sm" className="gap-2" onClick={resetUpload}>
                         <FileUp className="h-4 w-4" /> Upload Another
                       </Button>
-                      <Link to="/dashboard" className="ml-auto">
-                        <Button size="sm" className="gap-2">
-                          <Table2 className="h-4 w-4" /> Continue to Dashboard
-                        </Button>
-                      </Link>
                     </div>
 
-                    {/* Data Preview */}
                     <AnimatePresence>
                       {showPreview && (
                         <motion.div
@@ -353,7 +402,6 @@ export default function UploadData() {
                 ) : null}
               </AnimatePresence>
 
-              {/* Error Inline */}
               <AnimatePresence>
                 {status === 'error' && error && (
                   <motion.div
@@ -373,6 +421,58 @@ export default function UploadData() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Forecast Parameters & Load Data */}
+        {status === 'success' && parsedData && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+            <Card className="shadow-lg border-border/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Send className="h-5 w-5 text-primary" />
+                  Forecast Configuration
+                </CardTitle>
+                <CardDescription>
+                  Specify the date and value columns from your dataset, then run the forecast.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <ForecastParams
+                  dateCol={dateCol}
+                  valueCol={valueCol}
+                  horizon={horizon}
+                  onDateColChange={setDateCol}
+                  onValueColChange={setValueCol}
+                  onHorizonChange={setHorizon}
+                />
+                <Button
+                  onClick={handleLoadData}
+                  disabled={!canLoadData || forecastLoading}
+                  className="w-full gap-2 font-semibold"
+                  size="lg"
+                >
+                  {forecastLoading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Running Forecast…</>
+                  ) : (
+                    <><Send className="w-4 h-4" /> Load Data & Forecast</>
+                  )}
+                </Button>
+
+                {forecastError && (
+                  <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                    <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-destructive">Forecast Error</p>
+                      <p className="text-xs text-destructive/80 mt-0.5">{forecastError}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Forecast Results */}
+        {forecastData && <ForecastResults data={forecastData} />}
       </main>
     </div>
   );
