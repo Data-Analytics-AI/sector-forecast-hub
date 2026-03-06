@@ -14,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import ForecastParams from '@/components/forecast/ForecastParams';
 import ForecastResults, { ForecastRow } from '@/components/forecast/ForecastResults';
+import { supabase } from '@/integrations/supabase/client';
 
 type UploadStatus = 'idle' | 'validating' | 'uploading' | 'success' | 'error';
 
@@ -161,49 +162,45 @@ export default function UploadData() {
     setForecastData(null);
 
     try {
-      // Step 1: Upload the file to the backend
+      // Step 1: Upload the file via edge function
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const uploadRes = await fetch('http://127.0.0.1:8000/api/upload', {
-        method: 'POST',
+      const uploadRes = await supabase.functions.invoke('upload', {
         body: formData,
       });
 
-      if (!uploadRes.ok) {
-        const uploadErr = await uploadRes.json().catch(() => null);
-        setForecastError(uploadErr?.error || 'File upload failed.');
+      if (uploadRes.error) {
+        setForecastError(uploadRes.error.message || 'File upload failed.');
         return;
       }
 
-      const uploadJson = await uploadRes.json();
-      const serverPath = uploadJson.source_path;
-
+      const serverPath = uploadRes.data?.source_path;
       if (!serverPath) {
         setForecastError('Upload succeeded but no source_path returned.');
         return;
       }
 
-      // Step 2: Call the forecast endpoint with the server-side path
+      // Step 2: Call the forecast edge function with the server-side path
       const sourceType = getSourceType(selectedFile.name);
-      const res = await fetch('http://127.0.0.1:8000/api/forecast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const forecastRes = await supabase.functions.invoke('forecast', {
+        body: {
           source_type: sourceType,
           source_path: serverPath,
           date_col: dateCol,
           value_col: valueCol,
           horizon,
-        }),
+        },
       });
-      const json = await res.json();
-      if (json.error) {
-        setForecastError(json.error);
-      } else if (json.forecast) {
-        setForecastData(json.forecast);
-      } else if (Array.isArray(json)) {
-        setForecastData(json);
+
+      if (forecastRes.error) {
+        setForecastError(forecastRes.error.message || 'Forecast request failed.');
+      } else if (forecastRes.data?.error) {
+        setForecastError(forecastRes.data.error);
+      } else if (forecastRes.data?.forecast) {
+        setForecastData(forecastRes.data.forecast);
+      } else if (Array.isArray(forecastRes.data)) {
+        setForecastData(forecastRes.data);
       } else {
         setForecastError('Unexpected response format from server.');
       }
