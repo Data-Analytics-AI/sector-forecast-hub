@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import ForecastParams from '@/components/forecast/ForecastParams';
 import ForecastResults, { ForecastRow } from '@/components/forecast/ForecastResults';
+import { supabase } from '@/integrations/supabase/client';
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
 
@@ -71,24 +72,24 @@ export default function ConnectAPI() {
     setForecastData(null);
 
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/forecast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const forecastRes = await supabase.functions.invoke('forecast', {
+        body: {
           source_type: 'api',
           source_path: endpoint,
           date_col: dateCol,
           value_col: valueCol,
           horizon,
-        }),
+        },
       });
-      const json = await res.json();
-      if (json.error) {
-        setForecastError(json.error);
-      } else if (json.forecast) {
-        setForecastData(json.forecast);
-      } else if (Array.isArray(json)) {
-        setForecastData(json);
+
+      if (forecastRes.error) {
+        setForecastError(forecastRes.error.message || 'Forecast request failed.');
+      } else if (forecastRes.data?.error) {
+        setForecastError(forecastRes.data.error);
+      } else if (forecastRes.data?.forecast) {
+        setForecastData(forecastRes.data.forecast);
+      } else if (Array.isArray(forecastRes.data)) {
+        setForecastData(forecastRes.data);
       } else {
         setForecastError('Unexpected response format from server.');
       }
