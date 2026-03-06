@@ -161,13 +161,37 @@ export default function UploadData() {
     setForecastData(null);
 
     try {
+      // Step 1: Upload the file to the backend
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const uploadRes = await fetch('http://127.0.0.1:8000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadRes.ok) {
+        const uploadErr = await uploadRes.json().catch(() => null);
+        setForecastError(uploadErr?.error || 'File upload failed.');
+        return;
+      }
+
+      const uploadJson = await uploadRes.json();
+      const serverPath = uploadJson.source_path;
+
+      if (!serverPath) {
+        setForecastError('Upload succeeded but no source_path returned.');
+        return;
+      }
+
+      // Step 2: Call the forecast endpoint with the server-side path
       const sourceType = getSourceType(selectedFile.name);
       const res = await fetch('http://127.0.0.1:8000/api/forecast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           source_type: sourceType,
-          source_path: selectedFile.name,
+          source_path: serverPath,
           date_col: dateCol,
           value_col: valueCol,
           horizon,
