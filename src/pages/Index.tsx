@@ -45,6 +45,7 @@ const quickActions = [
 ];
 
 const Index = () => {
+  const navigate = useNavigate();
   const chartData = useMemo(() => generateForecastData('general', 6), []);
 
   return (
