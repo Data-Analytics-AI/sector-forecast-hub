@@ -12,6 +12,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { generateForecastData } from '@/data/demoData';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
@@ -81,7 +82,7 @@ const Index = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem className="gap-2 cursor-pointer">
+              <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => navigate('/auth')}>
                 <LogIn className="w-4 h-4" />
                 Sign In
               </DropdownMenuItem>
