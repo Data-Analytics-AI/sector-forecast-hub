@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, FileUp, CheckCircle2, AlertCircle, ArrowLeft,
-  FileSpreadsheet, X, Eye, Table2, Loader2, Send
+  FileSpreadsheet, X, Eye, Table2, Loader2, Send, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -493,7 +493,19 @@ export default function UploadData() {
         )}
 
         {/* Forecast Results */}
-        {forecastData && <ForecastResults data={forecastData} />}
+        {forecastData && (
+          <>
+            <ForecastResults data={forecastData} />
+            <div className="flex justify-center mt-6">
+              <Link to="/dashboard?mode=optimize">
+                <Button size="lg" className="gap-2 font-semibold">
+                  <Zap className="w-4 h-4" />
+                  Optimize Supply Chain
+                </Button>
+              </Link>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );

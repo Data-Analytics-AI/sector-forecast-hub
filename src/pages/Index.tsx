@@ -171,12 +171,6 @@ const Index = () => {
                   <Zap className="w-4 h-4" />
                   Run Forecast
                 </Button>
-                <Link to="/dashboard?mode=optimize">
-                  <Button size="lg" variant="outline" className="gap-2 font-semibold text-base px-8">
-                    <Truck className="w-4 h-4" />
-                    Optimize Supply Chain
-                  </Button>
-                </Link>
               </div>
             </motion.div>
 

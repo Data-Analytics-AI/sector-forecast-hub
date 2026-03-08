@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Plug, ArrowLeft, ArrowRight, CheckCircle2, XCircle, Loader2,
-  Globe, Key, Code2, Wifi, Check, Send, AlertCircle
+  Globe, Key, Code2, Wifi, Check, Send, AlertCircle, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -380,6 +380,14 @@ export default function ConnectAPI() {
           {forecastData && (
             <div className="mt-8">
               <ForecastResults data={forecastData} />
+              <div className="flex justify-center mt-6">
+                <Link to="/dashboard?mode=optimize">
+                  <Button size="lg" className="gap-2 font-semibold">
+                    <Zap className="w-4 h-4" />
+                    Optimize Supply Chain
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
         </motion.div>
