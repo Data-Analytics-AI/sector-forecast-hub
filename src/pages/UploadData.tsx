@@ -505,8 +505,8 @@ export default function UploadData() {
                     period: r.ds,
                     actual: r.yhat,
                     forecast: r.yhat,
-                    upper: r.yhatUpper,
-                    lower: r.yhatLower,
+                    upper: r.yhat_upper,
+                    lower: r.yhat_lower,
                   }));
                   sessionStorage.setItem('optimizeForecastData', JSON.stringify(mapped));
                   window.location.href = '/dashboard?mode=optimize';

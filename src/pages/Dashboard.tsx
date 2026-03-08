@@ -9,7 +9,7 @@ import Recommendations from '@/components/dashboard/Recommendations';
 import SettingsPanel from '@/components/dashboard/SettingsPanel';
 import DataConnector, { type DataConnectorResult } from '@/components/dashboard/DataConnector';
 import SampleDataTable from '@/components/dashboard/SampleDataTable';
-import { extendCustomDataWithForecast } from '@/data/demoData';
+import { extendCustomDataWithForecast, type ForecastPoint } from '@/data/demoData';
 
 const INDUSTRY_ID = 'general';
 

@@ -388,9 +388,9 @@ export default function ConnectAPI() {
                     const mapped = forecastData.map(r => ({
                       period: r.ds,
                       actual: r.yhat,
-                      forecast: r.yhat,
-                      upper: r.yhatUpper,
-                      lower: r.yhatLower,
+                    forecast: r.yhat,
+                    upper: r.yhat_upper,
+                    lower: r.yhat_lower,
                     }));
                     sessionStorage.setItem('optimizeForecastData', JSON.stringify(mapped));
                     window.location.href = '/dashboard?mode=optimize';
