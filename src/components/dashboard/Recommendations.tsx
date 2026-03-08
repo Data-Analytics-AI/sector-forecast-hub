@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, ArrowRight, Zap, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe, Database } from 'lucide-react';
 import { type ForecastPoint } from '@/data/demoData';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 interface AIRecommendation {
   priority: 'high' | 'medium' | 'low';
