@@ -11,9 +11,10 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { generateForecastData } from '@/data/demoData';
+import { supabase } from '@/integrations/supabase/client';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 const fadeUp = {
@@ -47,6 +48,15 @@ const quickActions = [
 const Index = () => {
   const navigate = useNavigate();
   const chartData = useMemo(() => generateForecastData('general', 6), []);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setIsLoggedIn(!!session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,6 +81,15 @@ const Index = () => {
                 {link.label}
               </Link>
             ))}
+            {isLoggedIn && (
+              <Link
+                to="/my-reports"
+                className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-secondary/60 flex items-center gap-1.5"
+              >
+                <FileText className="w-4 h-4" />
+                My Reports
+              </Link>
+            )}
           </div>
 
           <DropdownMenu>
@@ -83,14 +102,29 @@ const Index = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => navigate('/auth')}>
-                <LogIn className="w-4 h-4" />
-                Sign In
-              </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2 cursor-pointer text-destructive">
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </DropdownMenuItem>
+              {isLoggedIn && (
+                <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => navigate('/my-reports')}>
+                  <FileText className="w-4 h-4" />
+                  My Reports
+                </DropdownMenuItem>
+              )}
+              {!isLoggedIn ? (
+                <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => navigate('/auth')}>
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  className="gap-2 cursor-pointer text-destructive"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    setIsLoggedIn(false);
+                  }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
