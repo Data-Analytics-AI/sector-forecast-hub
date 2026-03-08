@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart3, Database, PlugZap, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import ForecastChart from '@/components/dashboard/ForecastChart';
 import KPICards from '@/components/dashboard/KPICards';
 import Recommendations from '@/components/dashboard/Recommendations';
@@ -14,6 +14,9 @@ import { extendCustomDataWithForecast } from '@/data/demoData';
 const INDUSTRY_ID = 'general';
 
 const Dashboard = () => {
+  const [searchParams] = useSearchParams();
+  const isOptimizeMode = searchParams.get('mode') === 'optimize';
+
   const [horizon, setHorizon] = useState(6);
   const [sensitivity, setSensitivity] = useState('balanced');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -56,7 +59,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <h1 className="text-base font-bold text-foreground tracking-tight">ForecastIQ</h1>
-                <p className="text-[11px] text-muted-foreground">Dashboard</p>
+                <p className="text-[11px] text-muted-foreground">{isOptimizeMode ? 'Supply Chain Optimization' : 'Dashboard'}</p>
               </div>
             </Link>
           </div>
@@ -75,57 +78,67 @@ const Dashboard = () => {
                 <span>Demo Mode</span>
               </div>
             )}
-            <div className="h-4 w-px bg-border" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowConnector(!showConnector)}
-              className="text-xs gap-1.5 text-muted-foreground hover:text-primary"
-            >
-              <PlugZap className="w-3.5 h-3.5" />
-              Connect Data
-            </Button>
+            {!isOptimizeMode && (
+              <>
+                <div className="h-4 w-px bg-border" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowConnector(!showConnector)}
+                  className="text-xs gap-1.5 text-muted-foreground hover:text-primary"
+                >
+                  <PlugZap className="w-3.5 h-3.5" />
+                  Connect Data
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       <main className="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
-        <AnimatePresence>
-          {showConnector && (
-            <DataConnector
-              onDataLoaded={handleDataLoaded}
-              onDismiss={() => setShowConnector(false)}
-              selectedIndustry={INDUSTRY_ID}
-            />
-          )}
-        </AnimatePresence>
+        {isOptimizeMode ? (
+          <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />
+        ) : (
+          <>
+            <AnimatePresence>
+              {showConnector && (
+                <DataConnector
+                  onDataLoaded={handleDataLoaded}
+                  onDismiss={() => setShowConnector(false)}
+                  selectedIndustry={INDUSTRY_ID}
+                />
+              )}
+            </AnimatePresence>
 
-        <KPICards key={`kpi-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />
+            <KPICards key={`kpi-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <ForecastChart
-              key={`chart-${horizon}-${refreshKey}`}
-              industryId={INDUSTRY_ID}
-              horizon={horizon}
-              customData={extendedData}
-            />
-          </div>
-          <div>
-            <SettingsPanel
-              horizon={horizon}
-              sensitivity={sensitivity}
-              onHorizonChange={setHorizon}
-              onSensitivityChange={setSensitivity}
-              onRefresh={handleRefresh}
-              onOptimize={() => setShowRecommendations(true)}
-            />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <ForecastChart
+                  key={`chart-${horizon}-${refreshKey}`}
+                  industryId={INDUSTRY_ID}
+                  horizon={horizon}
+                  customData={extendedData}
+                />
+              </div>
+              <div>
+                <SettingsPanel
+                  horizon={horizon}
+                  sensitivity={sensitivity}
+                  onHorizonChange={setHorizon}
+                  onSensitivityChange={setSensitivity}
+                  onRefresh={handleRefresh}
+                  onOptimize={() => setShowRecommendations(true)}
+                />
+              </div>
+            </div>
 
-        {showRecommendations && <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />}
+            {showRecommendations && <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />}
 
-        <SampleDataTable key={`table-${horizon}-${refreshKey}`} industryId={INDUSTRY_ID} horizon={horizon} customData={extendedData} />
+            <SampleDataTable key={`table-${horizon}-${refreshKey}`} industryId={INDUSTRY_ID} horizon={horizon} customData={extendedData} />
+          </>
+        )}
       </main>
     </div>
   );
