@@ -116,7 +116,7 @@ export default function Recommendations({ industryId, customData }: Recommendati
           <p className="text-sm text-muted-foreground text-center mb-6">
             No forecast data available. Connect a data source to generate optimization recommendations.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {dataSourceOptions.map((opt) => (
               <Link
                 key={opt.href}
