@@ -365,6 +365,14 @@ export default function ConnectDatabase() {
           {forecastData && (
             <div className="mt-8">
               <ForecastResults data={forecastData} />
+              <div className="flex justify-center mt-6">
+                <Link to="/dashboard?mode=optimize">
+                  <Button size="lg" className="gap-2 font-semibold">
+                    <Zap className="w-4 h-4" />
+                    Optimize Supply Chain
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
         </motion.div>
