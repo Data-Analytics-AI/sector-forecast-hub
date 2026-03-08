@@ -10,6 +10,7 @@ import ConnectDatabase from "./pages/ConnectDatabase";
 import ConnectAPI from "./pages/ConnectAPI";
 import UploadData from "./pages/UploadData";
 import NotFound from "./pages/NotFound";
+import MyReports from "./pages/MyReports";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/my-reports" element={<MyReports />} />
           <Route path="/connect-database" element={<ConnectDatabase />} />
           <Route path="/connect-api" element={<ConnectAPI />} />
           <Route path="/upload-data" element={<UploadData />} />
