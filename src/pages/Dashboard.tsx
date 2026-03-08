@@ -108,7 +108,7 @@ const Dashboard = () => {
 
       <main className="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
         {isOptimizeMode ? (
-          <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />
+          <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={optimizeForecastData || extendedData} />
         ) : (
           <>
             <AnimatePresence>
