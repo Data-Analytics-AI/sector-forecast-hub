@@ -24,6 +24,16 @@ const Dashboard = () => {
   const [customData, setCustomData] = useState<DataConnectorResult | null>(null);
   const [showRecommendations, setShowRecommendations] = useState(false);
 
+  // Load forecast data from sessionStorage when in optimize mode
+  const optimizeForecastData = useMemo(() => {
+    if (!isOptimizeMode) return undefined;
+    try {
+      const stored = sessionStorage.getItem('optimizeForecastData');
+      if (stored) return JSON.parse(stored) as ForecastPoint[];
+    } catch {}
+    return undefined;
+  }, [isOptimizeMode]);
+
   const extendedData = useMemo(() => {
     if (!customData?.data) return undefined;
     return extendCustomDataWithForecast(customData.data, horizon);
