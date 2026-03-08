@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, ArrowRight, Zap, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe, Database } from 'lucide-react';
 import { type ForecastPoint } from '@/data/demoData';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 interface AIRecommendation {
   priority: 'high' | 'medium' | 'low';
@@ -43,7 +44,10 @@ export default function Recommendations({ industryId, customData }: Recommendati
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
 
+  const hasData = customData && customData.length > 0;
+
   const fetchRecommendations = useCallback(async () => {
+    if (!hasData) return;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('recommendations', {
@@ -66,11 +70,23 @@ export default function Recommendations({ industryId, customData }: Recommendati
     } finally {
       setLoading(false);
     }
-  }, [industryId, customData]);
+  }, [industryId, customData, hasData]);
 
   useEffect(() => {
-    fetchRecommendations();
-  }, [fetchRecommendations]);
+    if (hasData) {
+      fetchRecommendations();
+    } else {
+      setRecs([]);
+      setSummary(null);
+      setHasLoaded(false);
+    }
+  }, [fetchRecommendations, hasData]);
+
+  const dataSourceOptions = [
+    { icon: Upload, label: 'Upload CSV/Excel', description: 'Upload a file from your device', href: '/upload' },
+    { icon: Globe, label: 'Connect API', description: 'Pull data from a REST or GraphQL endpoint', href: '/connect-api' },
+    { icon: Database, label: 'Connect Database', description: 'Query a MySQL, PostgreSQL or MongoDB database', href: '/connect-database' },
+  ];
 
   return (
     <motion.div
@@ -84,17 +100,40 @@ export default function Recommendations({ industryId, customData }: Recommendati
           <Zap className="w-4 h-4 text-primary" />
           <h2 className="text-lg font-semibold text-foreground">AI Optimization Recommendations</h2>
         </div>
-        <button
-          onClick={fetchRecommendations}
-          disabled={loading}
-          className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
-          title="Regenerate recommendations"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        {hasData && (
+          <button
+            onClick={fetchRecommendations}
+            disabled={loading}
+            className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+            title="Regenerate recommendations"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        )}
       </div>
 
-      {loading && !hasLoaded ? (
+      {!hasData ? (
+        <div className="py-8">
+          <p className="text-sm text-muted-foreground text-center mb-6">
+            No forecast data available. Connect a data source to generate optimization recommendations.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {dataSourceOptions.map((opt) => (
+              <Link
+                key={opt.href}
+                to={opt.href}
+                className="flex flex-col items-center gap-2 p-4 rounded-lg border border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 transition-all text-center group"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <opt.icon className="w-5 h-5 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-foreground">{opt.label}</span>
+                <span className="text-[11px] text-muted-foreground leading-tight">{opt.description}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : loading && !hasLoaded ? (
         <div className="flex items-center justify-center py-12 gap-3 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-sm">Analyzing forecast patterns…</span>
