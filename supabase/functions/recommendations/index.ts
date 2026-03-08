@@ -19,26 +19,29 @@ serve(async (req) => {
     const dataPoints = (forecastData || []).slice(0, 60); // limit context size
     const hasExtra = extraFields && extraFields.length > 0;
 
-    const systemPrompt = `You are a supply-chain and demand-planning optimization expert. 
-Analyze the provided forecast data and return actionable optimization recommendations in strict JSON format.
+    const systemPrompt = `You are a supply-chain and demand-planning optimization expert.
+Take the forecast data provided and generate optimization recommendations.
 
 Rules:
-- Produce 4-6 recommendations covering inventory, ordering, promotions, and risk mitigation.
-- Each recommendation must have a "priority" (high/medium/low), "action" title, "details" explanation, and "impact" (expected quantitative benefit like "+12% efficiency").
-- If extra fields (product, location, supplier) are present, tailor recommendations to them.
-- Include a summary object with "expected_benefits" and "optimization_focus".
+- If the dataset only includes date and sales/values:
+  Focus on demand-driven strategies such as adjusting order frequency, setting safety stock buffers (e.g. "Maintain 15% buffer above forecasted peak demand"), planning promotions during low-demand periods, and preparing for peaks (e.g. "Schedule replenishment every 7 days during high-demand periods").
+- If the dataset includes additional fields (e.g., product categories, warehouse locations, suppliers, lead times):
+  Incorporate these into the recommendations, such as inventory allocation by location, supplier scheduling, transportation planning, or markdown strategies.
+- Produce 4-6 clear, actionable recommendations that dynamically adapt to whatever fields are available.
+- Each recommendation must have "priority" (high/medium/low), "action" title, "details" with specific numbers derived from the data, and "impact" (expected quantitative benefit).
+- Include a summary with "expected_benefits" and "optimization_focus".
 - Return ONLY valid JSON, no markdown fences.`;
 
     const userPrompt = `Industry: ${industryId || "general"}
-${hasExtra ? `Additional fields available: ${extraFields.join(", ")}` : "No additional segmentation fields."}
+${hasExtra ? `Additional fields in the data: ${extraFields.join(", ")}. Use these to give location/product/supplier-specific recommendations.` : "The data contains only dates and values. Focus purely on demand-driven inventory and ordering strategies."}
 
-Forecast data (period, actual, forecast, upper, lower):
+Forecast data (period, actual, forecast, upper_bound, lower_bound):
 ${dataPoints.map((p: any) => `${p.period}, ${p.actual ?? "null"}, ${p.forecast}, ${p.upper}, ${p.lower}`).join("\n")}
 
-Return JSON with this exact schema:
+Analyze trends, seasonality, and variance in this data. Return JSON:
 {
   "recommendations": [
-    { "priority": "high|medium|low", "action": "string", "details": "string", "impact": "string" }
+    { "priority": "high|medium|low", "action": "string", "details": "string with specific numbers from data", "impact": "string" }
   ],
   "summary": {
     "expected_benefits": "string",
