@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showConnector, setShowConnector] = useState(false);
   const [customData, setCustomData] = useState<DataConnectorResult | null>(null);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
   const extendedData = useMemo(() => {
     if (!customData?.data) return undefined;
@@ -117,11 +118,12 @@ const Dashboard = () => {
               onHorizonChange={setHorizon}
               onSensitivityChange={setSensitivity}
               onRefresh={handleRefresh}
+              onOptimize={() => setShowRecommendations(true)}
             />
           </div>
         </div>
 
-        <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />
+        {showRecommendations && <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />}
 
         <SampleDataTable key={`table-${horizon}-${refreshKey}`} industryId={INDUSTRY_ID} horizon={horizon} customData={extendedData} />
       </main>
