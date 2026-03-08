@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Database, ArrowLeft, Eye, EyeOff, CheckCircle2, XCircle, Loader2, Info,
-  Server, Hash, User, Lock, HardDrive, Send, AlertCircle, Code2
+  Server, Hash, User, Lock, HardDrive, Send, AlertCircle, Code2, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

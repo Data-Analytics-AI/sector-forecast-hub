@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, FileUp, CheckCircle2, AlertCircle, ArrowLeft,
-  FileSpreadsheet, X, Eye, Table2, Loader2, Send
+  FileSpreadsheet, X, Eye, Table2, Loader2, Send, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

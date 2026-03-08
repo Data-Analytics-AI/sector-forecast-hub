@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   Plug, ArrowLeft, ArrowRight, CheckCircle2, XCircle, Loader2,
-  Globe, Key, Code2, Wifi, Check, Send, AlertCircle
+  Globe, Key, Code2, Wifi, Check, Send, AlertCircle, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
