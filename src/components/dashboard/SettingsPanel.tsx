@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Settings, RefreshCw } from 'lucide-react';
+import { Settings, RefreshCw, Zap } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,10 @@ interface SettingsPanelProps {
   onHorizonChange: (v: number) => void;
   onSensitivityChange: (v: string) => void;
   onRefresh: () => void;
+  onOptimize: () => void;
 }
 
-export default function SettingsPanel({ horizon, sensitivity, onHorizonChange, onSensitivityChange, onRefresh }: SettingsPanelProps) {
+export default function SettingsPanel({ horizon, sensitivity, onHorizonChange, onSensitivityChange, onRefresh, onOptimize }: SettingsPanelProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -78,6 +79,15 @@ export default function SettingsPanel({ horizon, sensitivity, onHorizonChange, o
         >
           <RefreshCw className="w-3.5 h-3.5 mr-2" />
           Regenerate Forecast
+        </Button>
+
+        <Button 
+          onClick={onOptimize}
+          variant="default"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <Zap className="w-3.5 h-3.5 mr-2" />
+          Optimize Supply Chain
         </Button>
       </div>
     </motion.div>
