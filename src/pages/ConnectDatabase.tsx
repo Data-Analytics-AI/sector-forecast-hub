@@ -366,12 +366,24 @@ export default function ConnectDatabase() {
             <div className="mt-8">
               <ForecastResults data={forecastData} />
               <div className="flex justify-center mt-6">
-                <Link to="/dashboard?mode=optimize">
-                  <Button size="lg" className="gap-2 font-semibold">
-                    <Zap className="w-4 h-4" />
-                    Optimize Supply Chain
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  className="gap-2 font-semibold"
+                  onClick={() => {
+                    const mapped = forecastData.map(r => ({
+                      period: r.ds,
+                      actual: r.yhat,
+                    forecast: r.yhat,
+                    upper: r.yhat_upper,
+                    lower: r.yhat_lower,
+                    }));
+                    sessionStorage.setItem('optimizeForecastData', JSON.stringify(mapped));
+                    window.location.href = '/dashboard?mode=optimize';
+                  }}
+                >
+                  <Zap className="w-4 h-4" />
+                  Optimize Supply Chain
+                </Button>
               </div>
             </div>
           )}

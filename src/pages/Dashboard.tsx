@@ -9,7 +9,7 @@ import Recommendations from '@/components/dashboard/Recommendations';
 import SettingsPanel from '@/components/dashboard/SettingsPanel';
 import DataConnector, { type DataConnectorResult } from '@/components/dashboard/DataConnector';
 import SampleDataTable from '@/components/dashboard/SampleDataTable';
-import { extendCustomDataWithForecast } from '@/data/demoData';
+import { extendCustomDataWithForecast, type ForecastPoint } from '@/data/demoData';
 
 const INDUSTRY_ID = 'general';
 
@@ -23,6 +23,16 @@ const Dashboard = () => {
   const [showConnector, setShowConnector] = useState(false);
   const [customData, setCustomData] = useState<DataConnectorResult | null>(null);
   const [showRecommendations, setShowRecommendations] = useState(false);
+
+  // Load forecast data from sessionStorage when in optimize mode
+  const optimizeForecastData = useMemo(() => {
+    if (!isOptimizeMode) return undefined;
+    try {
+      const stored = sessionStorage.getItem('optimizeForecastData');
+      if (stored) return JSON.parse(stored) as ForecastPoint[];
+    } catch {}
+    return undefined;
+  }, [isOptimizeMode]);
 
   const extendedData = useMemo(() => {
     if (!customData?.data) return undefined;
@@ -98,7 +108,7 @@ const Dashboard = () => {
 
       <main className="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
         {isOptimizeMode ? (
-          <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />
+          <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={optimizeForecastData || extendedData} />
         ) : (
           <>
             <AnimatePresence>
