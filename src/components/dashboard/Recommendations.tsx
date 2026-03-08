@@ -85,7 +85,6 @@ export default function Recommendations({ industryId, customData }: Recommendati
   const dataSourceOptions = [
     { icon: Upload, label: 'Upload CSV/Excel', description: 'Upload a file from your device', href: '/upload' },
     { icon: Globe, label: 'Connect API', description: 'Pull data from a REST or GraphQL endpoint', href: '/connect-api' },
-    { icon: Database, label: 'Connect Database', description: 'Query a MySQL, PostgreSQL or MongoDB database', href: '/connect-database' },
   ];
 
   return (
