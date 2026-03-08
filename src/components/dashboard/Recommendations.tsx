@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe, Database } from 'lucide-react';
+import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe } from 'lucide-react';
 import { type ForecastPoint } from '@/data/demoData';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,7 +85,6 @@ export default function Recommendations({ industryId, customData }: Recommendati
   const dataSourceOptions = [
     { icon: Upload, label: 'Upload CSV/Excel', description: 'Upload a file from your device', href: '/upload' },
     { icon: Globe, label: 'Connect API', description: 'Pull data from a REST or GraphQL endpoint', href: '/connect-api' },
-    { icon: Database, label: 'Connect Database', description: 'Query a MySQL, PostgreSQL or MongoDB database', href: '/connect-database' },
   ];
 
   return (
@@ -117,7 +116,7 @@ export default function Recommendations({ industryId, customData }: Recommendati
           <p className="text-sm text-muted-foreground text-center mb-6">
             No forecast data available. Connect a data source to generate optimization recommendations.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {dataSourceOptions.map((opt) => (
               <Link
                 key={opt.href}
