@@ -1,1 +1,10 @@
 project_id = "vyigqzihdygcwcizemfl"
+
+[functions.recommendations]
+verify_jwt = false
+
+[functions.forecast]
+verify_jwt = false
+
+[functions.upload]
+verify_jwt = false
