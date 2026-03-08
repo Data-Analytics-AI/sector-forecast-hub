@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe } from 'lucide-react';
+import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe, Database } from 'lucide-react';
 import { type ForecastPoint } from '@/data/demoData';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,6 +85,7 @@ export default function Recommendations({ industryId, customData }: Recommendati
   const dataSourceOptions = [
     { icon: Upload, label: 'Upload CSV/Excel', description: 'Upload a file from your device', href: '/upload' },
     { icon: Globe, label: 'Connect API', description: 'Pull data from a REST or GraphQL endpoint', href: '/connect-api' },
+    { icon: Database, label: 'Connect Database', description: 'Query data from a relational database', href: '/connect-database' },
   ];
 
   return (
