@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe, Database } from 'lucide-react';
+import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe } from 'lucide-react';
 import { type ForecastPoint } from '@/data/demoData';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
