@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe, Database } from 'lucide-react';
+import { ArrowRight, Zap, Loader2, RefreshCw, Upload, Globe, Database, BarChart3, Lightbulb, TrendingUp } from 'lucide-react';
 import { type ForecastPoint } from '@/data/demoData';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,11 +13,23 @@ interface AIRecommendation {
   impact: string;
 }
 
+interface ChartSuggestion {
+  type: string;
+  x: string;
+  y: string;
+  title: string;
+}
+
 interface AIRecommendationsResponse {
+  data_type?: string;
   recommendations: AIRecommendation[];
+  visualization?: {
+    charts: ChartSuggestion[];
+  };
   summary: {
     expected_benefits: string;
     optimization_focus: string;
+    guidance_points?: string[];
   };
 }
 
@@ -41,6 +53,8 @@ const priorityBadge = {
 export default function Recommendations({ industryId, customData }: RecommendationsProps) {
   const [recs, setRecs] = useState<AIRecommendation[]>([]);
   const [summary, setSummary] = useState<AIRecommendationsResponse['summary'] | null>(null);
+  const [visualization, setVisualization] = useState<AIRecommendationsResponse['visualization'] | null>(null);
+  const [dataType, setDataType] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
 
@@ -63,6 +77,8 @@ export default function Recommendations({ industryId, customData }: Recommendati
       const response = data as AIRecommendationsResponse;
       setRecs(response.recommendations || []);
       setSummary(response.summary || null);
+      setVisualization(response.visualization || null);
+      setDataType(response.data_type || null);
       setHasLoaded(true);
     } catch (e: any) {
       console.error('Failed to fetch recommendations:', e);
@@ -78,6 +94,8 @@ export default function Recommendations({ industryId, customData }: Recommendati
     } else {
       setRecs([]);
       setSummary(null);
+      setVisualization(null);
+      setDataType(null);
       setHasLoaded(false);
     }
   }, [fetchRecommendations, hasData]);
@@ -99,6 +117,11 @@ export default function Recommendations({ industryId, customData }: Recommendati
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-primary" />
           <h2 className="text-lg font-semibold text-foreground">AI Optimization Recommendations</h2>
+          {dataType && hasLoaded && (
+            <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent text-accent-foreground">
+              {dataType}
+            </span>
+          )}
         </div>
         {hasData && (
           <button
@@ -140,21 +163,69 @@ export default function Recommendations({ industryId, customData }: Recommendati
         </div>
       ) : (
         <>
+          {/* Summary Section */}
           {summary && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mb-4 p-3 rounded-lg bg-primary/5 border border-primary/10"
+              className="mb-4 p-4 rounded-lg bg-primary/5 border border-primary/10"
             >
-              <p className="text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">Focus:</span> {summary.optimization_focus}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <span className="font-semibold text-foreground">Expected benefits:</span> {summary.expected_benefits}
-              </p>
+              <div className="flex items-start gap-2 mb-2">
+                <TrendingUp className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">Focus:</span> {summary.optimization_focus}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    <span className="font-semibold text-foreground">Expected benefits:</span> {summary.expected_benefits}
+                  </p>
+                </div>
+              </div>
+
+              {/* Guidance Points */}
+              {summary.guidance_points && summary.guidance_points.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-primary/10">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Lightbulb className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Key Guidance</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {summary.guidance_points.map((point, i) => (
+                      <li key={i} className="text-xs text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary mt-0.5">•</span>
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </motion.div>
           )}
 
+          {/* Visualization Suggestions */}
+          {visualization?.charts && visualization.charts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="mb-4 p-3 rounded-lg bg-accent/30 border border-accent/20"
+            >
+              <div className="flex items-center gap-1.5 mb-2">
+                <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-foreground uppercase tracking-wider">Suggested Visualizations</span>
+              </div>
+              <div className="space-y-1.5">
+                {visualization.charts.map((chart, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono text-[10px] uppercase">{chart.type}</span>
+                    <span>{chart.title}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Recommendations List */}
           <div className="space-y-3">
             {recs.map((rec, i) => (
               <motion.div
