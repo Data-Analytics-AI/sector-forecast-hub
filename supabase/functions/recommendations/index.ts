@@ -15,37 +15,54 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Build a concise data summary for the prompt
-    const dataPoints = (forecastData || []).slice(0, 60); // limit context size
+    const dataPoints = (forecastData || []).slice(0, 60);
     const hasExtra = extraFields && extraFields.length > 0;
 
-    const systemPrompt = `You are a supply-chain and demand-planning optimization expert.
-Take the forecast data provided and generate optimization recommendations.
+    const systemPrompt = `You are an expert data analyst and optimization advisor.
+Your job is to take forecast data and generate practical, easy-to-understand optimization recommendations.
 
-Rules:
-- If the dataset only includes date and sales/values:
-  Focus on demand-driven strategies such as adjusting order frequency, setting safety stock buffers (e.g. "Maintain 15% buffer above forecasted peak demand"), planning promotions during low-demand periods, and preparing for peaks (e.g. "Schedule replenishment every 7 days during high-demand periods").
-- If the dataset includes additional fields (e.g., product categories, warehouse locations, suppliers, lead times):
-  Incorporate these into the recommendations, such as inventory allocation by location, supplier scheduling, transportation planning, or markdown strategies.
-- Produce 4-6 clear, actionable recommendations that dynamically adapt to whatever fields are available.
-- Each recommendation must have "priority" (high/medium/low), "action" title, "details" with specific numbers derived from the data, and "impact" (expected quantitative benefit).
-- Include a summary with "expected_benefits" and "optimization_focus".
-- Return ONLY valid JSON, no markdown fences.`;
+CRITICAL RULES:
+1. First, DETECT what type of data this is by examining the values, patterns, and any labels. It could be sales/demand, weather/temperature, energy, traffic, financial, or any other type.
+2. Tailor your recommendations specifically to the detected data type:
 
-    const userPrompt = `Industry: ${industryId || "general"}
-${hasExtra ? `Additional fields in the data: ${extraFields.join(", ")}. Use these to give location/product/supplier-specific recommendations.` : "The data contains only dates and values. Focus purely on demand-driven inventory and ordering strategies."}
+   - Sales/demand data → inventory buffers, order frequency, promotions during low-demand, peak preparation, safety stock levels
+   - Weather/temperature data → logistics schedule adjustments, energy usage planning, weather disruption preparedness, workforce planning, seasonal maintenance
+   - Financial data → cash flow optimization, investment timing, risk hedging, budget allocation
+   - Energy data → load balancing, peak shaving, storage optimization, demand response
+   - Traffic data → route optimization, scheduling adjustments, capacity planning
+   - Any other type → adapt recommendations to be practical and actionable for that specific context
+
+3. If additional fields are present (e.g., product categories, locations, suppliers, regions), incorporate them into more specific recommendations.
+4. Produce 4-6 clear, actionable recommendations with specific numbers derived from the actual data.
+5. Include a visualization suggestion that makes sense for the data type.
+6. Include guidance points that an average person can easily understand.
+7. Return ONLY valid JSON, no markdown fences.`;
+
+    const userPrompt = `Industry context: ${industryId || "general"}
+${hasExtra ? `Additional fields: ${extraFields.join(", ")}. Use these for more specific recommendations.` : "The data contains only dates and values."}
 
 Forecast data (period, actual, forecast, upper_bound, lower_bound):
 ${dataPoints.map((p: any) => `${p.period}, ${p.actual ?? "null"}, ${p.forecast}, ${p.upper}, ${p.lower}`).join("\n")}
 
-Analyze trends, seasonality, and variance in this data. Return JSON:
+Analyze this data carefully. Detect what type of data it is from the values and patterns. Then return JSON in this exact structure:
 {
+  "data_type": "string describing detected data type e.g. sales, weather, energy",
   "recommendations": [
-    { "priority": "high|medium|low", "action": "string", "details": "string with specific numbers from data", "impact": "string" }
+    { "priority": "high|medium|low", "action": "short title", "details": "specific actionable details with numbers from the data", "impact": "expected quantitative benefit" }
   ],
+  "visualization": {
+    "charts": [
+      { "type": "line|bar|area", "x": "field name", "y": "field name", "title": "descriptive chart title" }
+    ]
+  },
   "summary": {
-    "expected_benefits": "string",
-    "optimization_focus": "string"
+    "expected_benefits": "clear description of overall benefits",
+    "optimization_focus": "main area of focus",
+    "guidance_points": [
+      "Simple, clear guidance point 1",
+      "Simple, clear guidance point 2",
+      "Simple, clear guidance point 3"
+    ]
   }
 }`;
 
@@ -90,7 +107,6 @@ Analyze trends, seasonality, and variance in this data. Return JSON:
     const aiResult = await response.json();
     const content = aiResult.choices?.[0]?.message?.content || "";
 
-    // Strip markdown fences if present
     let cleaned = content.trim();
     if (cleaned.startsWith("```")) {
       cleaned = cleaned.replace(/^```(?:json)?\s*/, "").replace(/```\s*$/, "").trim();
