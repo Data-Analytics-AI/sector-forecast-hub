@@ -10,6 +10,8 @@ import SettingsPanel from '@/components/dashboard/SettingsPanel';
 import DataConnector, { type DataConnectorResult } from '@/components/dashboard/DataConnector';
 import SampleDataTable from '@/components/dashboard/SampleDataTable';
 import { extendCustomDataWithForecast, type ForecastPoint } from '@/data/demoData';
+import CopilotRecommendations from '@/components/dashboard/CopilotRecommendations';
+
 
 const INDUSTRY_ID = 'general';
 
@@ -108,7 +110,9 @@ const Dashboard = () => {
 
       <main className="max-w-[1440px] mx-auto px-6 py-6 space-y-6">
         {isOptimizeMode ? (
-          <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={optimizeForecastData || extendedData} />
+          <CopilotRecommendations forecastData={optimizeForecastData || extendedData} />
+          //<CopilotRecommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} forecastData={optimizeForecastData || extendedData} />
+          // <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={optimizeForecastData || extendedData} />
         ) : (
           <>
             <AnimatePresence>
@@ -142,9 +146,11 @@ const Dashboard = () => {
                   onOptimize={() => setShowRecommendations(true)}
                 />
               </div>
-            </div>
+              </div>
 
-            {showRecommendations && <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />}
+            {showRecommendations && <CopilotRecommendations forecastData={extendedData} />
+            /*showRecommendations && <CopilotRecommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />}
+            {/* {showRecommendations && <Recommendations key={`rec-${refreshKey}`} industryId={INDUSTRY_ID} customData={extendedData} />} */}
 
             <SampleDataTable key={`table-${horizon}-${refreshKey}`} industryId={INDUSTRY_ID} horizon={horizon} customData={extendedData} />
           </>
