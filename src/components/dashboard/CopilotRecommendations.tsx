@@ -13,19 +13,20 @@ Take the forecast data provided and generate a comprehensive optimization report
 
 Forecast Data: ${JSON.stringify(forecastData)}
 
-Output JSON with:
-{
-  "executive_summary": "...",
-  "recommendations": [
-    { "priority": "HIGH", "title": "...", "details": "...", "expected_benefit": "..." }
-  ],
-  "visualization": {
-    "charts": [
-      { "type": "line", "x": "date", "y": "forecast", "title": "Forecast vs. Action Points" }
-    ]
-  },
-  "guidance_points": ["...", "..."]
-}
+Your output must include:
+1. Executive Summary – concise overview of the forecast and key optimization focus.  
+2. Bottlenecks – detect and describe specific operational or strategic bottlenecks revealed by the dataset.  
+3. Improvements – state clear, actionable improvements to resolve each bottleneck, with measurable impact.  
+4. Recommendations – prioritized list (HIGH, MEDIUM, LOW) with title, details, and expected benefit.  
+5. Visualization Suggestions – chart types and axes relevant to the dataset.  
+6. Guidance Points – short bullet points summarizing practical actions.  
+
+Rules:
+- Adapt terminology dynamically: if the dataset is sales, use “inventory, stockouts, promotions”; if weather, use “temperature, rainfall, energy load”; if healthcare, use “patients, diagnostics, staffing.”  
+- Always highlight at least one bottleneck and its improvement.  
+- Quantify improvements where possible (percentages, units, costs, time saved).  
+- Output must be valid JSON with keys: executive_summary, bottlenecks, recommendations, visualization, guidance_points.
+
 `;
 
 const CopilotRecommendations = ({ forecastData }: { forecastData: any }) => {
