@@ -8,6 +8,11 @@ import { Link } from 'react-router-dom';
 
 import { useEffect, useState } from 'react';
 
+import { CopilotClient } from '@/integrations/copilot/client';
+
+const copilot = new CopilotClient();
+
+
 const buildOptimizationPrompt = (forecastData: any) => `
 Take the forecast data provided and generate a comprehensive optimization report that is directly relevant to the type of forecast data.
 
@@ -39,28 +44,28 @@ const CopilotRecommendations = ({ forecastData }: { forecastData: any }) => {
 
     // Replace this with your Copilot API call
     // Example pseudo-code:
-    // copilot.generate(prompt).then(output => {
-    //   setReport(JSON.parse(output));
-    // });
+    copilot.generate(prompt).then(output => {
+      setReport(JSON.parse(output));
+    });
 
     // For now, simulate with sample data:
-    setReport({
-      executive_summary: "Demand will peak mid-March. Optimization focuses on inventory buffers and supplier coordination.",
-      recommendations: [
-        { priority: "HIGH", title: "Safety Stock Adjustment", details: "Increase buffer by 15% before March 12.", expected_benefit: "+20% service stability" },
-        { priority: "MEDIUM", title: "Post-Peak Markdown", details: "Launch promotions after March 24 to clear excess stock.", expected_benefit: "-10% holding costs" }
-      ],
-      visualization: {
-        charts: [
-          { type: "line", x: "date", y: "forecast", title: "Forecast vs. Inventory Buffer" }
-        ]
-      },
-      guidance_points: [
-        "Focus resources on peak demand periods",
-        "Balance cost vs. service level",
-        "Communicate volatility to suppliers"
-      ]
-    });
+    // setReport({
+    //   executive_summary: "Demand will peak mid-March. Optimization focuses on inventory buffers and supplier coordination.",
+    //   recommendations: [
+    //     { priority: "HIGH", title: "Safety Stock Adjustment", details: "Increase buffer by 15% before March 12.", expected_benefit: "+20% service stability" },
+    //     { priority: "MEDIUM", title: "Post-Peak Markdown", details: "Launch promotions after March 24 to clear excess stock.", expected_benefit: "-10% holding costs" }
+    //   ],
+    //   visualization: {
+    //     charts: [
+    //       { type: "line", x: "date", y: "forecast", title: "Forecast vs. Inventory Buffer" }
+    //     ]
+    //   },
+    //   guidance_points: [
+    //     "Focus resources on peak demand periods",
+    //     "Balance cost vs. service level",
+    //     "Communicate volatility to suppliers"
+    //   ]
+    // });
   }, [forecastData]);
 
   if (!report) return <p>Loading recommendations...</p>;
